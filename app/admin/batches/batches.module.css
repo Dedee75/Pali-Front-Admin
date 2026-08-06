@@ -1,0 +1,439 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #fff;
+  border-bottom: 3px solid #f6e6b8;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+
+.navLeft, .navRight {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #c48a00;
+  color: #c48a00;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.brandName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c48a00;
+}
+
+.profileImg {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-weight: 600;
+  color: #c48a00;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+.logoutBtn:hover {
+  opacity: 0.7;
+}
+
+/* Layout Split */
+.layoutWrapper {
+  display: flex;
+  flex: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #f8f7f4;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sideBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fff;
+}
+
+.activeBtn {
+  background-color: #c48a00;
+  color: white;
+  box-shadow: 0 4px 8px rgba(196, 138, 0, 0.2);
+}
+
+.sideBtn:not(.activeBtn):hover {
+  background-color: #f0f0f0;
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  padding: 40px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 16px;
+  box-shadow: -4px 0 15px rgba(0,0,0,0.02);
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: bold;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+}
+
+.btnAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #c48a00;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnAdd:hover {
+  background-color: #a37300;
+}
+
+/* Table */
+.tableContainer {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #faf9f6;
+  color: #444;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 18px 24px;
+  text-align: center;
+}
+
+.table td {
+  padding: 16px 24px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* Make second column left-aligned for Teacher Name */
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  text-align: left;
+}
+
+.rowEven { background-color: #fff; }
+.rowOdd { background-color: #faf9f6; }
+
+/* Text Styling in Rows */
+.identityText {
+  font-weight: 700;
+  color: #444;
+  font-size: 14px;
+}
+
+.teacherName {
+  font-weight: 700;
+  color: #222;
+  font-size: 14px;
+}
+
+.teacherEmail {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* Batch Name Badge */
+.batchBadge {
+  background-color: #eef2ff;
+  color: #4b5563;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Status Badges */
+.statusActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #a7f3d0;
+  color: #047857;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #dbeafe;
+  color: #475569;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* Action Buttons */
+.actionButtonsRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.editBtn, .deleteBtn {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.editBtn:hover {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.deleteBtn:hover {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+/* Pagination Footer */
+.paginationFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #faf9f6;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.entriesText {
+  font-size: 14px;
+  color: #666;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  background: transparent;
+  border: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.pageActive {
+  background-color: #c48a00;
+  color: white;
+  font-weight: bold;
+}
+
+.footerBrand {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 30px;
+}
+
+/* =========================================
+   MODAL STYLES
+   ========================================= */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background-color: white;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modalTitle {
+  font-size: 22px;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 20px 0;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+.inputField {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+  background-color: #fafafa;
+}
+
+.inputField:focus {
+  border-color: #c48a00;
+  background-color: #fff;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.cancelBtn {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #555;
+}
+.cancelBtn:hover {
+  background: #f5f5f5;
+}
+
+.saveBtn {
+  background: #c48a00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.saveBtn:hover {
+  background: #a87600;
+}

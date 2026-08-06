@@ -1,0 +1,332 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #fff;
+  border-bottom: 3px solid #f6e6b8;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+
+.navLeft, .navRight {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #c48a00;
+  color: #c48a00;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.brandName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c48a00;
+}
+
+.profileImg {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-weight: 600;
+  color: #c48a00;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+.logoutBtn:hover {
+  opacity: 0.7;
+}
+
+/* Layout Split */
+.layoutWrapper {
+  display: flex;
+  flex: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #f8f7f4;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sideBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fff;
+}
+
+.activeBtn {
+  background-color: #c48a00;
+  color: white;
+  box-shadow: 0 4px 8px rgba(196, 138, 0, 0.2);
+}
+
+.sideBtn:not(.activeBtn):hover {
+  background-color: #f0f0f0;
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  padding: 30px 40px;
+  background-color: #f8f7f4; 
+  display: flex;
+  flex-direction: column;
+}
+
+/* Back Button Styles */
+.backBtnContainer {
+  margin-bottom: 20px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: #111;
+}
+
+/* The Blue Border Container */
+.blueBorderContainer {
+  background-color: #ffffff;
+  border-radius: 4px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: bold;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Buttons in Header */
+.btnSelect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  color: #555;
+  border: 1px solid #ccc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnSelect:hover {
+  background-color: #f5f5f5;
+}
+
+.btnAssign {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #c48a00; /* Gold */
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnAssign:hover {
+  background-color: #a37300;
+}
+
+/* Dropdown and Search */
+.filterDropdown, .searchBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid #ddd;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.filterDropdown {
+  cursor: pointer;
+}
+
+.searchBox input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  width: 130px;
+}
+
+/* Table styling */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #eef1f5;
+  color: #666;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 16px;
+  border-bottom: 2px solid #ddd;
+  text-align: center;
+}
+
+/* Align left for specific columns */
+.table th:nth-child(2), .table td:nth-child(2),
+.table th:nth-child(3), .table td:nth-child(3),
+.table th:nth-child(4), .table td:nth-child(4) {
+  text-align: left;
+}
+
+.table td {
+  padding: 16px;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.rowHighlight {
+  background-color: #fdf5d3; /* Pale yellow background for selected row */
+}
+
+/* Checkbox Square */
+.checkbox {
+  width: 20px;
+  height: 20px;
+  background-color: #d1d5db;
+  border-radius: 4px;
+  border: 1px solid #9ca3af;
+  margin: 0 auto;
+}
+
+/* Text Formatting */
+.boldText {
+  font-weight: 700;
+  color: #222;
+  font-size: 13px;
+}
+
+.subText {
+  font-size: 11px;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* Yellow Paper Boxes */
+.papperBox {
+  width: 45px;
+  height: 28px;
+  background-color: #fef0b8; /* Pale Gold/Yellow */
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 auto;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.footerBrand {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 30px;
+}

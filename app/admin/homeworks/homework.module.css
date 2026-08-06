@@ -1,0 +1,377 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #fff;
+  border-bottom: 3px solid #f6e6b8;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+
+.navLeft, .navRight {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #c48a00;
+  color: #c48a00;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.brandName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c48a00;
+}
+
+.profileImg {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-weight: 600;
+  color: #c48a00;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+.logoutBtn:hover {
+  opacity: 0.7;
+}
+
+/* Layout Split */
+.layoutWrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden; /* Important for containing the scroll */
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #f8f7f4;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sideBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fff;
+}
+
+.activeBtn {
+  background-color: #c48a00;
+  color: white;
+  box-shadow: 0 4px 8px rgba(196, 138, 0, 0.2);
+}
+
+.sideBtn:not(.activeBtn):hover {
+  background-color: #f0f0f0;
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  padding: 40px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 16px;
+  box-shadow: -4px 0 15px rgba(0,0,0,0.02);
+  min-width: 0; /* Critical to allow child flex containers to shrink/scroll */
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: bold;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filterDropdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  min-width: 220px;
+  justify-content: space-between;
+}
+
+.btnAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #c48a00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnAdd:hover {
+  background-color: #a37300;
+}
+
+/* Scroll Container for Batches */
+.scrollContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+.batchSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.batchTitle {
+  font-size: 22px;
+  font-weight: bold;
+  color: #c48a00;
+  margin: 0 0 20px 0;
+}
+
+/* Horizontal Scroll wrapper */
+.cardRowWrapper {
+  width: 100%;
+}
+
+.cardRow {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  scrollbar-width: none; /* Firefox */
+}
+.cardRow::-webkit-scrollbar {
+  display: none; /* Safari/Chrome */
+}
+
+/* Card Styling */
+.card {
+  min-width: 280px;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #eee;
+}
+
+.cardPending {
+  background-color: #fdf5d3; /* Pale yellow */
+  border-color: #f6e6b8;
+}
+
+.cardCompleted {
+  background-color: #faf9f6;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+}
+
+.cardDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  color: #444;
+  margin-bottom: 25px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+/* Avatar Group */
+.avatarGroup {
+  display: flex;
+  align-items: center;
+}
+
+.avatarGroup img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid white;
+  margin-left: -12px;
+  object-fit: cover;
+}
+.avatarGroup img:first-child { margin-left: 0; }
+
+.avatarMore {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #555;
+  color: white;
+  font-size: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: -12px;
+  border: 2px solid white;
+  z-index: 1;
+}
+
+/* Buttons */
+.btnCheck {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #7b7b8f; /* Grey/Blue */
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnView {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: white;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Pagination Footer */
+.paginationFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #faf9f6;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.entriesText {
+  font-size: 14px;
+  color: #666;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  background: transparent;
+  border: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.pageActive {
+  background-color: #c48a00;
+  color: white;
+  font-weight: bold;
+}
+
+.footerBrand {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 20px;
+}

@@ -1,0 +1,485 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #fff;
+  border-bottom: 3px solid #f6e6b8;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+
+.navLeft, .navRight {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #c48a00;
+  color: #c48a00;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.brandName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c48a00;
+}
+
+.profileImg {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-weight: 600;
+  color: #c48a00;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* Layout Split */
+.layoutWrapper {
+  display: flex;
+  flex: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #f8f7f4;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sideBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fff;
+}
+
+.activeBtn {
+  background-color: #c48a00;
+  color: white;
+  box-shadow: 0 4px 8px rgba(196, 138, 0, 0.2);
+}
+
+.sideBtn:not(.activeBtn):hover {
+  background-color: #f0f0f0;
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  padding: 40px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 16px;
+  box-shadow: -4px 0 15px rgba(0,0,0,0.02);
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: bold;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filterDropdown, .searchBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.searchBox input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  width: 150px;
+}
+
+.btnAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #c48a00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnAdd:hover {
+  background-color: #a37300;
+}
+
+/* Table */
+.tableContainer {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #faf9f6;
+  color: #444;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 18px 24px;
+  text-align: center;
+}
+
+/* Left align specific columns */
+.table th:nth-child(3), .table td:nth-child(3) {
+  text-align: left;
+}
+
+.table td {
+  padding: 16px 24px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.rowEven { background-color: #fff; }
+.rowOdd { background-color: #faf9f6; }
+
+.tableAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.boldText {
+  font-weight: 700;
+  color: #444;
+  font-size: 13px;
+}
+
+.subText {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.actionButtonsRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.editBtn, .deleteBtn {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editBtn:hover { border-color: #2563eb; background-color: #eff6ff; }
+.deleteBtn:hover { border-color: #dc2626; background-color: #fef2f2; }
+
+/* Pagination */
+.paginationFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #faf9f6;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.entriesText { font-size: 14px; color: #666; }
+.paginationControls { display: flex; align-items: center; gap: 6px; }
+
+.pageBtn {
+  background: transparent;
+  border: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.pageActive {
+  background-color: #c48a00;
+  color: white;
+  font-weight: bold;
+}
+
+.footerBrand {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 30px;
+}
+
+/* =========================================
+   MODALS OVERLAY
+   ========================================= */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* =========================================
+   1. FORM MODAL (Screenshot 2)
+   ========================================= */
+.formModalContent {
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.formHeader {
+  background-color: #c48a00;
+  padding: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.formBody {
+  padding: 30px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.profileImgContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: -60px; /* Pulls image up into header */
+  margin-bottom: 10px;
+}
+
+.formProfileImg {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Custom File Input */
+.fileInputWrapper {
+  border: 1px solid #c48a00;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fileLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btnChooseFile {
+  background-color: #c48a00;
+  color: white;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.fileText {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #111;
+  font-weight: 600;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+/* Gold Text Inputs */
+.goldInput {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #c48a00;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  outline: none;
+  background-color: white;
+}
+.goldInput::placeholder { color: #888; font-weight: normal; }
+
+.btnConfirmForm {
+  background-color: #c48a00;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btnConfirmForm:hover { background-color: #a87600; }
+
+/* =========================================
+   2. DELETE MODAL (Screenshot 3)
+   ========================================= */
+.deleteModalContent {
+  background-color: white;
+  width: 100%;
+  max-width: 360px;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.warningIconWrapper {
+  width: 50px;
+  height: 50px;
+  background-color: #ffebee;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 20px auto;
+}
+
+.deleteTitle {
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 10px 0;
+}
+
+.deleteDesc {
+  font-size: 14px;
+  color: #777;
+  margin: 0 0 25px 0;
+  line-height: 1.5;
+}
+
+.deleteActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btnDeleteField {
+  background-color: #c48a00;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btnCancelField {
+  background-color: white;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
