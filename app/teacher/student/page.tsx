@@ -9,13 +9,13 @@ import {
 import { useRouter } from "next/navigation";
 import styles from "./student.module.css";
 
-const API_URL =
+const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000";
+  "http://localhost:3000"
+).replace(/\/$/, "");
 
-const BACKEND_ORIGIN =
-  process.env.NEXT_PUBLIC_BACKEND_ORIGIN ??
-  "http://localhost:3000";
+const API_URL =
+  API_BASE_URL;
 
 const PAGE_SIZE = 10;
 
@@ -51,7 +51,15 @@ type StudentData = {
   township: string | null;
   region: string | null;
   image?: string | null;
+  imagePath?: string | null;
+  imageUrl?: string | null;
   feedback: Feedback[];
+};
+
+type DatabaseStudent = {
+  id: number;
+  studentCode: string;
+  image: string | null;
 };
 
 function getArray<T>(
@@ -108,42 +116,69 @@ function getErrorMessage(
   return fallback;
 }
 
+const DEFAULT_STUDENT_IMAGE =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+      <rect width="160" height="160" fill="#f3f4f6"/>
+      <circle cx="80" cy="60" r="30" fill="#c9a227"/>
+      <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
+    </svg>
+  `);
+
 function resolveImageUrl(
-  imagePath:
+  value:
     | string
     | null
     | undefined,
-  fallbackId: number,
 ): string {
-  if (!imagePath) {
-    return `https://i.pravatar.cc/150?img=${
-      (fallbackId % 70) + 1
-    }`;
-  }
+  const image =
+    String(
+      value ?? "",
+    ).trim();
 
-  const value =
-    imagePath.trim();
+  if (!image) {
+    return DEFAULT_STUDENT_IMAGE;
+  }
 
   if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:") ||
-    value.startsWith("blob:")
+    image.startsWith(
+      "http://",
+    ) ||
+    image.startsWith(
+      "https://",
+    ) ||
+    image.startsWith(
+      "data:image/",
+    ) ||
+    image.startsWith(
+      "blob:",
+    )
   ) {
-    return value;
+    return image;
   }
 
-  const normalizedPath =
-    value.replace(
-      /^\/?uploads\/homeworks\//,
-      "/uploads/homework/",
-    );
+  if (
+    image.startsWith(
+      "/",
+    )
+  ) {
+    return `${API_BASE_URL}${image}`;
+  }
 
-  return `${BACKEND_ORIGIN}${
-    normalizedPath.startsWith("/")
-      ? normalizedPath
-      : `/${normalizedPath}`
-  }`;
+  return `${API_BASE_URL}/${image}`;
+}
+
+function getStudentImage(
+  student:
+    StudentData,
+): string {
+  return resolveImageUrl(
+    student.image ??
+      student.imagePath ??
+      student.imageUrl ??
+      null,
+  );
 }
 
 function formatReviewedDate(
@@ -309,17 +344,133 @@ export default function TeacherStudentPage() {
       setError("");
 
       try {
-        const result =
+        /*
+         * 1. Load only the students that belong on the
+         *    Teacher Students page.
+         */
+        const teacherResult =
           await apiFetch(
             "/homework-submissions/teacher/students",
           );
 
-        setStudents(
+        const teacherStudents =
           getArray<StudentData>(
-            result,
-          ),
+            teacherResult,
+          );
+
+        /*
+         * 2. Load the main Student database list used by
+         *    Admin /students.
+         *
+         *    This is intentional:
+         *    some teacher-student endpoints return the
+         *    student data but omit/null the image field.
+         *
+         *    We merge by student.id so Teacher uses the
+         *    exact same database image as Admin.
+         */
+        let databaseStudents:
+          DatabaseStudent[] = [];
+
+        try {
+          const databaseResult =
+            await apiFetch(
+              "/students",
+            );
+
+          databaseStudents =
+            getArray<DatabaseStudent>(
+              databaseResult,
+            );
+        } catch (
+          imageRequestError
+        ) {
+          /*
+           * Do not break the whole page if /students
+           * is unavailable to this account.
+           * The original teacher response is still usable.
+           */
+          console.warn(
+            "Could not load database student images:",
+            imageRequestError,
+          );
+        }
+
+        const imageByStudentId =
+          new Map<
+            number,
+            string | null
+          >();
+
+        const imageByStudentCode =
+          new Map<
+            string,
+            string | null
+          >();
+
+        for (
+          const student of
+          databaseStudents
+        ) {
+          imageByStudentId.set(
+            student.id,
+            student.image,
+          );
+
+          imageByStudentCode.set(
+            student.studentCode
+              .trim()
+              .toUpperCase(),
+            student.image,
+          );
+        }
+
+        const mergedStudents =
+          teacherStudents.map(
+            (
+              student,
+            ): StudentData => {
+              const databaseImage =
+                imageByStudentId.get(
+                  student.id,
+                ) ??
+                imageByStudentCode.get(
+                  student.studentCode
+                    .trim()
+                    .toUpperCase(),
+                ) ??
+                null;
+
+              return {
+                ...student,
+
+                /*
+                 * Database image gets priority.
+                 *
+                 * Example:
+                 * /uploads/students/1786332811562-....jpg
+                 */
+                image:
+                  databaseImage ??
+                  student.image ??
+                  student.imagePath ??
+                  student.imageUrl ??
+                  null,
+              };
+            },
+          );
+
+        console.log(
+          "TEACHER STUDENTS WITH DATABASE IMAGES:",
+          mergedStudents,
         );
-      } catch (requestError) {
+
+        setStudents(
+          mergedStudents,
+        );
+      } catch (
+        requestError
+      ) {
         setError(
           requestError instanceof Error
             ? requestError.message
@@ -427,6 +578,16 @@ export default function TeacherStudentPage() {
     };
   }, [selectedStudent]);
 
+   const DEFAULT_AVATAR =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+      <rect width="160" height="160" fill="#f3f4f6"/>
+      <circle cx="80" cy="60" r="30" fill="#c9a227"/>
+      <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
+    </svg>
+  `);
+  
   const filteredStudents =
     useMemo(() => {
       const keyword =
@@ -577,21 +738,12 @@ export default function TeacherStudentPage() {
             styles.navRight
           }
         >
-          <img
-            src="https://i.pravatar.cc/150?img=47"
-            alt="Teacher profile"
-            className={
-              styles.profileImg
-            }
-          />
-
+         <img src={DEFAULT_AVATAR} alt="Profile" className={styles.profileImg} />
           <span
-            className={
-              styles.profileName
-            }
+            className={styles.profileName}
           >
             {currentUser?.name ??
-              "Teacher"}
+              "Super Admin"}
           </span>
 
           <button
@@ -690,9 +842,9 @@ export default function TeacherStudentPage() {
                   styles.pageSubtitle
                 }
               >
-                Only students assigned
-                to your teacher account
-                are shown.
+                Students from batches
+                assigned to your teacher
+                account are shown.
               </p>
             </div>
 
@@ -706,7 +858,7 @@ export default function TeacherStudentPage() {
                   styles.filterDropdown
                 }
               >
-                Assigned Students
+                My Batch Students
               </div>
 
               <label
@@ -851,9 +1003,8 @@ export default function TeacherStudentPage() {
 
                         <td>
                           <img
-                            src={resolveImageUrl(
-                              student.image,
-                              student.id,
+                            src={getStudentImage(
+                              student,
                             )}
                             alt={
                               student.name
@@ -862,6 +1013,17 @@ export default function TeacherStudentPage() {
                               styles.tableAvatar
                             }
                             loading="lazy"
+                            onError={(
+                              event,
+                            ) => {
+                              if (
+                                event.currentTarget.src !==
+                                DEFAULT_STUDENT_IMAGE
+                              ) {
+                                event.currentTarget.src =
+                                  DEFAULT_STUDENT_IMAGE;
+                              }
+                            }}
                           />
                         </td>
 
@@ -1088,9 +1250,8 @@ export default function TeacherStudentPage() {
               }
             >
               <img
-                src={resolveImageUrl(
-                  selectedStudent.image,
-                  selectedStudent.id,
+                src={getStudentImage(
+                  selectedStudent,
                 )}
                 alt={
                   selectedStudent.name
@@ -1098,6 +1259,17 @@ export default function TeacherStudentPage() {
                 className={
                   styles.modalAvatar
                 }
+                onError={(
+                  event,
+                ) => {
+                  if (
+                    event.currentTarget.src !==
+                    DEFAULT_STUDENT_IMAGE
+                  ) {
+                    event.currentTarget.src =
+                      DEFAULT_STUDENT_IMAGE;
+                  }
+                }}
               />
 
               <div>

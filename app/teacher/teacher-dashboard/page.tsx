@@ -183,6 +183,16 @@ export default function TeacherDashboardPage() {
     }
   }, [loadDashboard, router]);
 
+   const DEFAULT_AVATAR =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+      <rect width="160" height="160" fill="#f3f4f6"/>
+      <circle cx="80" cy="60" r="30" fill="#c9a227"/>
+      <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
+    </svg>
+  `);
+
   const groupedAssignments =
     useMemo(() => {
       const groups = new Map<
@@ -254,18 +264,13 @@ export default function TeacherDashboardPage() {
         </div>
 
         <div className={styles.navRight}>
-          <img
-            src="https://i.pravatar.cc/150?img=47"
-            alt="Profile"
-            className={styles.profileImg}
-          />
+          <img src={DEFAULT_AVATAR} alt="Profile" className={styles.profileImg} />
           <span
             className={styles.profileName}
           >
             {currentUser?.name ??
-              "Teacher"}
+              "Super Admin"}
           </span>
-
           <button
             type="button"
             className={styles.logoutBtn}
