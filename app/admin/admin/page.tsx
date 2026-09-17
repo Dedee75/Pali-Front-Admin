@@ -11,6 +11,8 @@ import type {
 } from "react";
 
 import { useRouter } from "next/navigation";
+import { confirmAction } from "../../../lib/dialog";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./admin.module.css";
 
 const API_URL =
@@ -65,6 +67,9 @@ export default function AdminPage() {
 
   const [editingId, setEditingId] =
     useState<number | null>(null);
+
+  const isEditingOwnAccount =
+    editingId !== null && editingId === currentUser?.id;
 
   const [isModalOpen, setIsModalOpen] =
     useState(false);
@@ -229,7 +234,7 @@ export default function AdminPage() {
       // Password ကို backend က မပို့ပါ
       password: "",
 
-      role: user.role,
+      role: user.id === currentUser?.id ? currentUser.role : user.role,
 
       isActive: user.isActive
         ? "true"
@@ -277,13 +282,15 @@ export default function AdminPage() {
       return;
     }
 
+    if (editingId !== null && !(await confirmAction("update", "this user"))) return;
+
     setSaving(true);
     setError("");
 
     const payload: {
       name: string;
       email: string;
-      role: UserRole;
+      role?: UserRole;
       isActive: boolean;
       password?: string;
     } = {
@@ -293,7 +300,7 @@ export default function AdminPage() {
         .trim()
         .toLowerCase(),
 
-      role: formData.role,
+      ...(isEditingOwnAccount ? {} : { role: formData.role }),
 
       isActive:
         formData.isActive === "true",
@@ -360,9 +367,7 @@ export default function AdminPage() {
     id: number,
   ) => {
     const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this user?",
-      );
+      await confirmAction("delete", "this user");
 
     if (!confirmed) return;
 
@@ -419,6 +424,7 @@ export default function AdminPage() {
       {/* Navbar */}
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div
             className={styles.logoIcon}
           >
@@ -590,11 +596,12 @@ export default function AdminPage() {
             >
               <thead>
                 <tr>
+                  <th className={styles.mobileOnly}>ID</th>
                   <th>User Name</th>
                   <th>Role</th>
                   <th>Password</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th className={styles.actionsColumn}>Actions</th>
                 </tr>
               </thead>
 
@@ -602,7 +609,7 @@ export default function AdminPage() {
                 {loading && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       style={{
                         textAlign:
                           "center",
@@ -619,13 +626,20 @@ export default function AdminPage() {
                     (user, index) => (
                       <tr
                         key={user.id}
-                        className={
-                          index % 2 ===
-                          0
-                            ? styles.rowEven
-                            : styles.rowOdd
-                        }
+                        className={`${index % 2 === 0 ? styles.rowEven : styles.rowOdd} ${styles.clickableRow}`}
+                        onClick={() => handleOpenEdit(user)}
+                        onKeyDown={(event) => {
+                          if (event.target !== event.currentTarget) return;
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleOpenEdit(user);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Edit ${user.name}`}
                       >
+                        <td className={styles.mobileOnly}>{user.id}</td>
                         <td>
                           <div
                             className={
@@ -706,38 +720,27 @@ export default function AdminPage() {
                           </span>
                         </td>
 
-                        <td>
+                        <td className={styles.actionsColumn}>
                           <div
                             className={
                               styles.actionButtonsRow
                             }
                           >
                             <button
-                              className={
-                                styles.editBtn
-                              }
-                              onClick={() =>
-                                handleOpenEdit(
-                                  user,
-                                )
-                              }
-                              title="Edit User"
+                              type="button"
+                              className={styles.deleteBtn}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleDelete(user.id);
+                              }}
+                              onKeyDown={(event) => event.stopPropagation()}
+                              title="Delete"
+                              aria-label={`Delete ${user.name}`}
                             >
-                              Edit
-                            </button>
-
-                            <button
-                              className={
-                                styles.deleteBtn
-                              }
-                              onClick={() =>
-                                void handleDelete(
-                                  user.id,
-                                )
-                              }
-                              title="Delete User"
-                            >
-                              Delete
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
                             </button>
                           </div>
                         </td>
@@ -750,7 +753,7 @@ export default function AdminPage() {
                     0 && (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         style={{
                           textAlign:
                             "center",
@@ -865,8 +868,9 @@ export default function AdminPage() {
                 <select
                   name="role"
                   value={
-                    formData.role
+                    isEditingOwnAccount ? currentUser?.role : formData.role
                   }
+                  disabled={isEditingOwnAccount}
                   onChange={
                     handleChange
                   }
@@ -878,9 +882,11 @@ export default function AdminPage() {
                     Admin
                   </option>
 
-                  <option value="TEACHER">
-                    Teacher
-                  </option>
+                  {!isEditingOwnAccount && (
+                    <option value="TEACHER">
+                      Teacher
+                    </option>
+                  )}
                 </select>
               </div>
 

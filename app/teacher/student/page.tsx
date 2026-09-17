@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./student.module.css";
 
 const API_BASE_URL = (
@@ -54,12 +55,6 @@ type StudentData = {
   imagePath?: string | null;
   imageUrl?: string | null;
   feedback: Feedback[];
-};
-
-type DatabaseStudent = {
-  id: number;
-  studentCode: string;
-  image: string | null;
 };
 
 function getArray<T>(
@@ -358,116 +353,8 @@ export default function TeacherStudentPage() {
             teacherResult,
           );
 
-        /*
-         * 2. Load the main Student database list used by
-         *    Admin /students.
-         *
-         *    This is intentional:
-         *    some teacher-student endpoints return the
-         *    student data but omit/null the image field.
-         *
-         *    We merge by student.id so Teacher uses the
-         *    exact same database image as Admin.
-         */
-        let databaseStudents:
-          DatabaseStudent[] = [];
-
-        try {
-          const databaseResult =
-            await apiFetch(
-              "/students",
-            );
-
-          databaseStudents =
-            getArray<DatabaseStudent>(
-              databaseResult,
-            );
-        } catch (
-          imageRequestError
-        ) {
-          /*
-           * Do not break the whole page if /students
-           * is unavailable to this account.
-           * The original teacher response is still usable.
-           */
-          console.warn(
-            "Could not load database student images:",
-            imageRequestError,
-          );
-        }
-
-        const imageByStudentId =
-          new Map<
-            number,
-            string | null
-          >();
-
-        const imageByStudentCode =
-          new Map<
-            string,
-            string | null
-          >();
-
-        for (
-          const student of
-          databaseStudents
-        ) {
-          imageByStudentId.set(
-            student.id,
-            student.image,
-          );
-
-          imageByStudentCode.set(
-            student.studentCode
-              .trim()
-              .toUpperCase(),
-            student.image,
-          );
-        }
-
-        const mergedStudents =
-          teacherStudents.map(
-            (
-              student,
-            ): StudentData => {
-              const databaseImage =
-                imageByStudentId.get(
-                  student.id,
-                ) ??
-                imageByStudentCode.get(
-                  student.studentCode
-                    .trim()
-                    .toUpperCase(),
-                ) ??
-                null;
-
-              return {
-                ...student,
-
-                /*
-                 * Database image gets priority.
-                 *
-                 * Example:
-                 * /uploads/students/1786332811562-....jpg
-                 */
-                image:
-                  databaseImage ??
-                  student.image ??
-                  student.imagePath ??
-                  student.imageUrl ??
-                  null,
-              };
-            },
-          );
-
-        console.log(
-          "TEACHER STUDENTS WITH DATABASE IMAGES:",
-          mergedStudents,
-        );
-
-        setStudents(
-          mergedStudents,
-        );
+        // The assigned-students endpoint includes each student's database image.
+        setStudents(teacherStudents);
       } catch (
         requestError
       ) {
@@ -716,6 +603,7 @@ export default function TeacherStudentPage() {
             styles.navLeft
           }
         >
+          <MobileNavigation />
           <div
             className={
               styles.logoIcon
@@ -842,9 +730,8 @@ export default function TeacherStudentPage() {
                   styles.pageSubtitle
                 }
               >
-                Students from batches
-                assigned to your teacher
-                account are shown.
+                Students whose homework has been assigned
+                to you for review are shown.
               </p>
             </div>
 
@@ -858,7 +745,7 @@ export default function TeacherStudentPage() {
                   styles.filterDropdown
                 }
               >
-                My Batch Students
+                My Assigned Students
               </div>
 
               <label

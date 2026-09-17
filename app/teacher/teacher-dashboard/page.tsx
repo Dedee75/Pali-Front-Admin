@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./teacher-dashboard.module.css";
 
 const API_URL =
@@ -251,6 +252,7 @@ export default function TeacherDashboardPage() {
     <div className={styles.container}>
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div
             className={styles.logoIcon}
           >

@@ -11,6 +11,8 @@ import type {
   FormEvent,
 } from "react";
 import { useRouter } from "next/navigation";
+import { confirmAction } from "../../../lib/dialog";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./batches.module.css";
 
 const API_URL =
@@ -29,33 +31,18 @@ type LoginUser = {
   isActive: boolean;
 };
 
-type Teacher = {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-};
-
 type Batch = {
   id: number;
   name: string;
   status: boolean;
   startDate: string;
   endDate: string;
-  teacherId: number;
-  teacher?: {
-    id: number;
-    name: string;
-    email: string;
-  } | null;
   createdAt?: string;
   updatedAt?: string;
 };
 
 type BatchForm = {
   name: string;
-  teacherId: string;
   startDate: string;
   endDate: string;
   status: "true" | "false";
@@ -74,7 +61,6 @@ function getDefaultEndDate(): string {
 function createDefaultForm(): BatchForm {
   return {
     name: "",
-    teacherId: "",
     startDate: getToday(),
     endDate: getDefaultEndDate(),
     status: "true",
@@ -85,7 +71,6 @@ export default function BatchesPage() {
   const router = useRouter();
 
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [currentUser, setCurrentUser] =
     useState<LoginUser | null>(null);
 
@@ -182,31 +167,14 @@ export default function BatchesPage() {
     setError("");
 
     try {
-      const [batchResult, userResult] =
-        await Promise.all([
-          apiFetch("/batches"),
-          apiFetch("/users"),
-        ]);
+      const batchResult = await apiFetch("/batches");
 
       const batchList: Batch[] =
         Array.isArray(batchResult)
           ? batchResult
           : batchResult?.data ?? [];
 
-      const userList: Teacher[] =
-        Array.isArray(userResult)
-          ? userResult
-          : userResult?.data ?? [];
-
       setBatches(batchList);
-
-      setTeachers(
-        userList.filter(
-          (user) =>
-            user.role === "TEACHER" &&
-            user.isActive,
-        ),
-      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -280,19 +248,6 @@ export default function BatchesPage() {
     );
   }, [batches, currentPage]);
 
-  const getTeacher = (batch: Batch) => {
-    if (batch.teacher) {
-      return batch.teacher;
-    }
-
-    return (
-      teachers.find(
-        (teacher) =>
-          teacher.id === batch.teacherId,
-      ) ?? null
-    );
-  };
-
   const formatIdentity = (id: number) =>
     `BAT-${String(id).padStart(4, "0")}`;
 
@@ -301,12 +256,6 @@ export default function BatchesPage() {
 
   const handleOpenCreate = () => {
     const newForm = createDefaultForm();
-
-    if (teachers.length > 0) {
-      newForm.teacherId = String(
-        teachers[0].id,
-      );
-    }
 
     setFormData(newForm);
     setEditingId(null);
@@ -317,7 +266,6 @@ export default function BatchesPage() {
   const handleOpenEdit = (batch: Batch) => {
     setFormData({
       name: batch.name,
-      teacherId: String(batch.teacherId),
       startDate:
         batch.startDate.slice(0, 10),
       endDate: batch.endDate.slice(0, 10),
@@ -361,13 +309,6 @@ export default function BatchesPage() {
     event.preventDefault();
     setModalError("");
 
-    if (!formData.teacherId) {
-      setModalError(
-        "Please select a teacher.",
-      );
-      return;
-    }
-
     const startDate = new Date(
       `${formData.startDate}T00:00:00.000Z`,
     );
@@ -385,13 +326,12 @@ export default function BatchesPage() {
 
     const payload = {
       name: formData.name.trim(),
-      teacherId: Number(
-        formData.teacherId,
-      ),
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       status: formData.status === "true",
     };
+
+    if (editingId !== null && !(await confirmAction("update", "this batch"))) return;
 
     setSaving(true);
 
@@ -411,7 +351,10 @@ export default function BatchesPage() {
         );
       }
 
-      handleCloseModal();
+      setIsModalOpen(false);
+      setEditingId(null);
+      setModalError("");
+      setFormData(createDefaultForm());
       await fetchData();
     } catch (err) {
       setModalError(
@@ -427,9 +370,7 @@ export default function BatchesPage() {
   const handleDelete = async (
     id: number,
   ) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this batch?",
-    );
+    const confirmed = await confirmAction("delete", "this batch");
 
     if (!confirmed) return;
 
@@ -479,6 +420,7 @@ export default function BatchesPage() {
     <div className={styles.container}>
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div className={styles.logoIcon}>
             A
           </div>
@@ -619,8 +561,7 @@ export default function BatchesPage() {
                   handleOpenCreate
                 }
                 disabled={
-                  loading ||
-                  teachers.length === 0
+                  loading
                 }
               >
                 Add New
@@ -642,22 +583,6 @@ export default function BatchesPage() {
             </div>
           )}
 
-          {!loading &&
-            teachers.length === 0 && (
-              <div
-                style={{
-                  color: "#92400e",
-                  background: "#fffbeb",
-                  padding: "10px 12px",
-                  borderRadius: "6px",
-                  marginBottom: "16px",
-                }}
-              >
-                Create an active teacher
-                before creating a batch.
-              </div>
-            )}
-
           <div
             className={
               styles.tableContainer
@@ -669,7 +594,6 @@ export default function BatchesPage() {
               <thead>
                 <tr>
                   <th>Identity</th>
-                  <th>Teacher</th>
                   <th>Batch Name</th>
                   <th>Duration</th>
                   <th>Status</th>
@@ -681,7 +605,7 @@ export default function BatchesPage() {
                 {loading && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       style={{
                         textAlign:
                           "center",
@@ -696,8 +620,6 @@ export default function BatchesPage() {
                 {!loading &&
                   paginatedBatches.map(
                     (batch, index) => {
-                      const teacher =
-                        getTeacher(batch);
 
                       return (
                         <tr
@@ -711,6 +633,7 @@ export default function BatchesPage() {
                             handleOpenEdit(batch)
                           }
                           onKeyDown={(event) => {
+                            if (event.target !== event.currentTarget) return;
                             if (
                               event.key === "Enter" ||
                               event.key === " "
@@ -731,28 +654,6 @@ export default function BatchesPage() {
                             {formatIdentity(
                               batch.id,
                             )}
-                          </td>
-
-                          <td>
-                            <div>
-                              <div
-                                className={
-                                  styles.teacherName
-                                }
-                              >
-                                {teacher?.name ??
-                                  "Unknown Teacher"}
-                              </div>
-
-                              <div
-                                className={
-                                  styles.teacherEmail
-                                }
-                              >
-                                {teacher?.email ??
-                                  "-"}
-                              </div>
-                            </div>
                           </td>
 
                           <td>
@@ -819,12 +720,13 @@ export default function BatchesPage() {
                                   batch.id
                                 }
                                 title="Delete"
-                                aria-label={`Delete ${batch.name}`}
+                                aria-label={deletingId === batch.id ? `Deleting ${batch.name}` : `Delete ${batch.name}`}
+                                aria-busy={deletingId === batch.id}
                               >
-                                {deletingId ===
-                                batch.id
-                                  ? "Deleting..."
-                                  : "Delete"}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
                               </button>
                             </div>
                           </td>
@@ -837,7 +739,7 @@ export default function BatchesPage() {
                   batches.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={5}
                         style={{
                           textAlign:
                             "center",
@@ -1024,48 +926,6 @@ export default function BatchesPage() {
                   }
                   placeholder="Batch 1"
                 />
-              </div>
-
-              <div
-                className={
-                  styles.formGroup
-                }
-              >
-                <label>Teacher</label>
-
-                <select
-                  name="teacherId"
-                  required
-                  value={
-                    formData.teacherId
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  className={
-                    styles.inputField
-                  }
-                >
-                  <option value="">
-                    Select teacher
-                  </option>
-
-                  {teachers.map(
-                    (teacher) => (
-                      <option
-                        key={
-                          teacher.id
-                        }
-                        value={
-                          teacher.id
-                        }
-                      >
-                        {teacher.name} -{" "}
-                        {teacher.email}
-                      </option>
-                    ),
-                  )}
-                </select>
               </div>
 
               <div

@@ -330,3 +330,95 @@
   color: #aaa;
   margin-top: 30px;
 }
+
+/* Keep navigation visible; only the content pane scrolls. */
+.container {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.navbar {
+  flex: 0 0 auto;
+}
+
+.layoutWrapper {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mainContent {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.mainContent > * {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .navbar { padding: 13px 18px; }
+  .brandName { font-size: 17px; }
+  .profileName { display: none; }
+  .sidebar { width: 190px; padding: 20px 12px; }
+  .mainContent { padding: 24px 18px; }
+}
+
+@media (max-width: 560px) {
+  .layoutWrapper { flex-direction: column; }
+  .sidebar {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    padding: 10px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid #eee5d7;
+  }
+  .sideBtn { flex-shrink: 0; padding: 10px 14px; white-space: nowrap; }
+  .mainContent { flex: 1 1 0; border-radius: 0; }
+  .navLeft, .navRight { gap: 8px; }
+  .logoIcon, .profileImg, .logoutBtn { flex-shrink: 0; }
+}
+
+/* Compact navigation for phones and tablets. */
+@media (max-width: 1024px) {
+  .sidebar { display: none; }
+  .layoutWrapper { min-width: 0; min-height: 0; flex-direction: row; overflow: hidden; }
+  .mainContent { min-width: 0; width: 100%; margin-left: 0; padding: 24px; border-radius: 0; }
+  .navbar { padding: 10px 18px; gap: 12px; }
+  .navLeft, .navRight { min-width: 0; gap: 10px; }
+  .profileName { display: none; }
+  .contentHeader { flex-wrap: wrap; gap: 16px; }
+  .headerActions { flex-wrap: wrap; gap: 10px; max-width: 100%; }
+  .modalContent, .formModalContent, .deleteModalContent { width: min(600px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow-y: auto; box-sizing: border-box; }
+  .modalOverlay { padding: 14px; box-sizing: border-box; }
+}
+@media (max-width: 600px) {
+  .navbar { padding: 8px 12px; }
+  .brandName { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logoIcon { display: none; }
+  .navLeft { flex: 1; }
+  .navRight { flex-shrink: 0; }
+  .mainContent { padding: 20px 12px; }
+  .pageTitle { font-size: 24px; }
+  .headerActions { width: 100%; }
+  .searchBox { width: 100%; min-width: 0; }
+  .searchBox input { min-width: 0; width: 100%; }
+  .paginationFooter { flex-wrap: wrap; gap: 12px; padding: 14px 10px; }
+  .paginationControls { flex-wrap: wrap; }
+  .modalContent, .formModalContent { padding: 22px 18px; }
+}

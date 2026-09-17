@@ -11,6 +11,8 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
+import { confirmAction } from "../../../lib/dialog";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./homework-detail.module.css";
 
 const API_URL =
@@ -447,6 +449,8 @@ function HomeworkDetailsContent() {
         return;
       }
 
+      if (!(await confirmAction("update", "these homework marks"))) return;
+
       setSaving(true);
       setError("");
 
@@ -577,6 +581,7 @@ function HomeworkDetailsContent() {
     <div className={styles.container}>
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div
             className={styles.logoIcon}
           >

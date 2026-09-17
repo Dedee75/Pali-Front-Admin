@@ -1,0 +1,10 @@
+.trigger { display: none; }
+.drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(310px, 85vw); height: 100dvh; max-height: 100dvh; max-width: 85vw; padding: 22px 18px; border: 0; background: #fffdf8; color: #29251e; box-shadow: 12px 0 50px #0003; }
+.drawer::backdrop { background: #17131b88; backdrop-filter: blur(3px); }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; color: #a87516; }
+.heading button { width: 44px; height: 44px; font-size: 28px; border: 1px solid #eee3cc; border-radius: 10px; background: white; cursor: pointer; }
+.link, .active { display: block; margin: 8px 0; padding: 15px 18px; border-radius: 12px; font-weight: 600; text-decoration: none; }
+.link { background: #f4f0e8; color: #555; }
+.active { background: #b78012; color: white; }
+.trigger:focus-visible, .drawer a:focus-visible, .heading button:focus-visible { outline: 3px solid #c48a00; outline-offset: 3px; }
+@media (max-width: 1024px) { .trigger { display: inline-flex; justify-content: center; align-items: center; width: 44px; height: 44px; flex-shrink: 0; color: #a87516; background: #fff9ed; border: 1px solid #ead9aa; border-radius: 10px; cursor: pointer; } }

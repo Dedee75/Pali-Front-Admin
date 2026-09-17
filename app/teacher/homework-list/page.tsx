@@ -14,6 +14,7 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./homework-list.module.css";
 
 const API_URL =
@@ -312,6 +313,7 @@ function HomeworkListContent() {
     <div className={styles.container}>
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div
             className={styles.logoIcon}
           >

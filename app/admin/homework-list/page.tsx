@@ -15,6 +15,7 @@ import {
   useSearchParams,
 } from "next/navigation";
 
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./homework-list.module.css";
 
 const API_URL = (
@@ -93,7 +94,7 @@ type Homework = {
   batch?: {
     id: number;
     name: string;
-    teacherId?: number;
+    teacherId?: number | null;
     teacher?: Reviewer | null;
   } | null;
 };
@@ -1085,6 +1086,7 @@ function AdminHomeworkListContent() {
             styles.navLeft
           }
         >
+          <MobileNavigation />
           <div
             className={
               styles.logoIcon

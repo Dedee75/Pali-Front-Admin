@@ -682,3 +682,32 @@
     padding: 18px;
   }
 }
+
+/* Compact navigation for phones and tablets. */
+@media (max-width: 1024px) {
+  .sidebar { display: none; }
+  .layoutWrapper { min-width: 0; min-height: 0; flex-direction: row; overflow: hidden; }
+  .mainContent { min-width: 0; width: 100%; margin-left: 0; padding: 24px; border-radius: 0; }
+  .navbar { padding: 10px 18px; gap: 12px; }
+  .navLeft, .navRight { min-width: 0; gap: 10px; }
+  .profileName { display: none; }
+  .contentHeader { flex-wrap: wrap; gap: 16px; }
+  .headerActions { flex-wrap: wrap; gap: 10px; max-width: 100%; }
+  .modalContent, .formModalContent, .deleteModalContent { width: min(600px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow-y: auto; box-sizing: border-box; }
+  .modalOverlay { padding: 14px; box-sizing: border-box; }
+}
+@media (max-width: 600px) {
+  .navbar { padding: 8px 12px; }
+  .brandName { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logoIcon { display: none; }
+  .navLeft { flex: 1; }
+  .navRight { flex-shrink: 0; }
+  .mainContent { padding: 20px 12px; }
+  .pageTitle { font-size: 24px; }
+  .headerActions { width: 100%; }
+  .searchBox { width: 100%; min-width: 0; }
+  .searchBox input { min-width: 0; width: 100%; }
+  .paginationFooter { flex-wrap: wrap; gap: 12px; padding: 14px 10px; }
+  .paginationControls { flex-wrap: wrap; }
+  .modalContent, .formModalContent { padding: 22px 18px; }
+}

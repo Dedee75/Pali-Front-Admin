@@ -6,6 +6,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { confirmAction, showMessage } from "../../../lib/dialog";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./student.module.css";
 
 // Backend Student API
@@ -294,7 +296,7 @@ export default function AdminStudentPage() {
           error,
         );
 
-        alert(
+        void showMessage(
           error instanceof Error
             ? error.message
             : "Failed to fetch students.",
@@ -464,7 +466,7 @@ export default function AdminStudentPage() {
         ) ||
         batchId < 1
       ) {
-        alert(
+        void showMessage(
           "Batch ID must be a positive number.",
         );
         return;
@@ -477,7 +479,7 @@ export default function AdminStudentPage() {
         age < 0 ||
         age > 150
       ) {
-        alert(
+        void showMessage(
           "Age must be between 0 and 150.",
         );
         return;
@@ -487,12 +489,14 @@ export default function AdminStudentPage() {
         !editingId &&
         !selectedImageFile
       ) {
-        alert(
+        void showMessage(
           "Please choose a student image.",
         );
 
         return;
       }
+
+      if (editingId && !(await confirmAction("update", "this student"))) return;
 
       const requestBody =
         new FormData();
@@ -628,7 +632,7 @@ export default function AdminStudentPage() {
           error,
         );
 
-        alert(
+        void showMessage(
           error instanceof Error
             ? error.message
             : "Something went wrong.",
@@ -671,7 +675,7 @@ export default function AdminStudentPage() {
         file.type,
       )
     ) {
-      alert(
+      void showMessage(
         "Only JPG, PNG and WEBP images are allowed.",
       );
 
@@ -685,7 +689,7 @@ export default function AdminStudentPage() {
       file.size >
       20 * 1024 * 1024
     ) {
-      alert(
+      void showMessage(
         "Image must be 20 MB or smaller.",
       );
 
@@ -773,7 +777,7 @@ export default function AdminStudentPage() {
           error,
         );
 
-        alert(
+        void showMessage(
           error instanceof Error
             ? error.message
             : "Failed to delete student.",
@@ -861,6 +865,7 @@ export default function AdminStudentPage() {
       
       <header className={styles.navbar}>
         <div className={styles.navLeft}>
+          <MobileNavigation />
           <div className={styles.logoIcon}>A</div>
           <span className={styles.brandName}>Dhamma Admin</span>
         </div>
@@ -1018,6 +1023,7 @@ export default function AdminStudentPage() {
                         className={`${(startIndex + index) % 2 === 0 ? styles.rowEven : styles.rowOdd} ${styles.clickableRow}`}
                         onClick={() => handleOpenEdit(student)}
                         onKeyDown={(event) => {
+                          if (event.target !== event.currentTarget) return;
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
                             handleOpenEdit(student);

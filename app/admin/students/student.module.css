@@ -424,18 +424,20 @@
 .deleteModalContent {
   background-color: white;
   width: 100%;
-  max-width: 360px;
-  border-radius: 12px;
-  padding: 30px;
+  max-width: 440px;
+  border-radius: 24px;
+  padding: 36px 30px 26px;
+  border: 1px solid #f2dddd;
+  color-scheme: light;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 24px 80px #211a2240;
 }
 
 .warningIconWrapper {
-  width: 50px;
-  height: 50px;
+  width: 68px;
+  height: 68px;
   background-color: #ffebee;
-  border-radius: 50%;
+  border-radius: 22px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -443,7 +445,7 @@
 }
 
 .deleteTitle {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
   color: #222;
   margin: 0 0 10px 0;
@@ -458,16 +460,20 @@
 
 .deleteActions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  padding-top: 22px;
+  border-top: 1px solid #eee9e1;
   gap: 12px;
 }
 
 .btnDeleteField {
-  background-color: #c48a00;
+  background-color: #c23838;
   color: white;
   border: none;
   padding: 12px;
-  border-radius: 8px;
+  flex: 1;
+  min-height: 48px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: bold;
   cursor: pointer;
@@ -478,8 +484,182 @@
   color: #555;
   border: 1px solid #ddd;
   padding: 12px;
-  border-radius: 8px;
+  flex: 1;
+  min-height: 48px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: bold;
   cursor: pointer;
+}
+.btnDeleteField:hover { background: #a62b2b; }
+.btnCancelField:hover { background: #f6f3ee; }
+.btnDeleteField:focus-visible, .btnCancelField:focus-visible { outline: 3px solid #c23838; outline-offset: 3px; }
+
+/* Keep navigation visible; only the content pane scrolls. */
+.container {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.navbar {
+  flex: 0 0 auto;
+}
+
+.layoutWrapper {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mainContent {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.mainContent > * {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .navbar { padding: 13px 18px; }
+  .brandName { font-size: 17px; }
+  .profileName { display: none; }
+  .sidebar { width: 190px; padding: 20px 12px; }
+  .mainContent { padding: 24px 18px; }
+}
+
+@media (max-width: 560px) {
+  .layoutWrapper { flex-direction: column; }
+  .sidebar {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    padding: 10px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid #eee5d7;
+  }
+  .sideBtn { flex-shrink: 0; padding: 10px 14px; white-space: nowrap; }
+  .mainContent { flex: 1 1 0; border-radius: 0; }
+  .navLeft, .navRight { gap: 8px; }
+  .logoIcon, .profileImg, .logoutBtn { flex-shrink: 0; }
+}
+
+/* Compact navigation for phones and tablets. */
+@media (max-width: 1024px) {
+  .sidebar { display: none; }
+  .layoutWrapper { min-width: 0; min-height: 0; flex-direction: row; overflow: hidden; }
+  .mainContent { min-width: 0; width: 100%; margin-left: 0; padding: 24px; border-radius: 0; }
+  .navbar { padding: 10px 18px; gap: 12px; }
+  .navLeft, .navRight { min-width: 0; gap: 10px; }
+  .profileName { display: none; }
+  .contentHeader { flex-wrap: wrap; gap: 16px; }
+  .headerActions { flex-wrap: wrap; gap: 10px; max-width: 100%; }
+  .modalContent, .formModalContent, .deleteModalContent { width: min(600px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); overflow-y: auto; box-sizing: border-box; }
+  .modalOverlay { padding: 14px; box-sizing: border-box; }
+}
+@media (max-width: 600px) {
+  .navbar { padding: 8px 12px; }
+  .brandName { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logoIcon { display: none; }
+  .navLeft { flex: 1; }
+  .navRight { flex-shrink: 0; }
+  .mainContent { padding: 20px 12px; }
+  .pageTitle { font-size: 24px; }
+  .headerActions { width: 100%; }
+  .searchBox { width: 100%; min-width: 0; }
+  .searchBox input { min-width: 0; width: 100%; }
+  .paginationFooter { flex-wrap: wrap; gap: 12px; padding: 14px 10px; }
+  .paginationControls { flex-wrap: wrap; }
+  .modalContent, .formModalContent { padding: 22px 18px; }
+}
+
+.mobileOnly { display: none; }
+@media (max-width: 600px) {
+  .table { width: 100%; table-layout: auto; }
+  .table th, .table td { padding: 12px 8px; font-size: 12px; overflow-wrap: anywhere; }
+  .table th:nth-child(4), .table td:nth-child(4):not([colspan]) { display: none; }
+  .table th:nth-child(5), .table td:nth-child(5):not([colspan]) { display: none; }
+  .table th:nth-child(6), .table td:nth-child(6):not([colspan]) { display: none; }
+  .table th:nth-child(7), .table td:nth-child(7):not([colspan]) { display: none; }
+  .table .mobileOnly { display: table-cell; }
+  .userEmail, .subText { display: none; }
+  .userCell { gap: 8px; min-width: 0; }
+  .userName { font-size: 13px; overflow-wrap: anywhere; }
+  .userInitials, .tableAvatar { width: 32px; height: 32px; flex-shrink: 0; }
+  .table .actionsColumn { width: 54px; }
+  .deleteBtn { min-width: 40px; min-height: 40px; }
+}
+
+/* List toolbar: equal-height controls with no fixed-width overflow. */
+@media (max-width: 1024px) {
+  .contentHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+  .headerActions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .headerActions > * {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 46px;
+    margin: 0;
+  }
+  .filterDropdown, .searchBox {
+    padding: 11px 14px;
+    gap: 10px;
+  }
+  .searchBox input {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+    font-size: 16px;
+  }
+  .headerActions svg { flex-shrink: 0; }
+  .btnAdd, .btnAddUser {
+    justify-content: center;
+    padding: 11px 14px;
+    text-align: center;
+    line-height: 1.4;
+    white-space: normal;
+  }
+}
+@media (max-width: 600px) {
+  .headerActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .headerActions > .searchBox {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  .headerActions > :only-child { grid-column: 1 / -1; }
+  .filterDropdown { font-size: 13px; gap: 8px; }
+  .filterDropdown span { min-width: 0; }
+}
+@media (max-width: 380px) {
+  .headerActions { grid-template-columns: minmax(0, 1fr); }
 }

@@ -12,6 +12,8 @@ import type {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { confirmAction } from "../../../lib/dialog";
+import MobileNavigation from "../../../components/MobileNavigation";
 import styles from "./homework.module.css";
 
 const API_URL = (
@@ -40,7 +42,7 @@ type Batch = {
   id: number;
   name: string;
   status: boolean;
-  teacherId: number;
+  teacherId: number | null;
   teacher?: {
     id: number;
     name: string;
@@ -785,6 +787,8 @@ export default function AdminHomeworkPage() {
         totalMarks,
       };
 
+    if (editingId !== null && !(await confirmAction("update", "this homework"))) return;
+
       setSaving(
         true,
       );
@@ -862,9 +866,7 @@ export default function AdminHomeworkPage() {
       homework: Homework,
     ) => {
       const confirmed =
-        window.confirm(
-          `Delete "${homework.title}"?`,
-        );
+        await confirmAction("delete", "this homework");
 
       if (!confirmed) {
         return;
@@ -939,6 +941,7 @@ export default function AdminHomeworkPage() {
             styles.navLeft
           }
         >
+          <MobileNavigation />
           <div
             className={
               styles.logoIcon
