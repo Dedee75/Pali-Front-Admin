@@ -1,119 +1,88 @@
-"use client";
+/** @format */
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { useRouter } from "next/navigation";
-import MobileNavigation from "../../../components/MobileNavigation";
-import styles from "./student.module.css";
+'use client';
 
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000"
-).replace(/\/$/, "");
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import MobileNavigation from '../../../components/MobileNavigation';
+import styles from './student.module.css';
 
-const API_URL =
-  API_BASE_URL;
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+
+const API_URL = API_BASE_URL;
 
 const PAGE_SIZE = 10;
 
-type UserRole =
-  | "SUPER_ADMIN"
-  | "TEACHER";
+type UserRole = 'SUPER_ADMIN' | 'TEACHER';
 
 type LoginUser = {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
+	id: number;
+	name: string;
+	email: string;
+	role: UserRole;
+	isActive: boolean;
 };
 
 type Feedback = {
-  submissionId: number;
-  homeworkId: number;
-  homeworkTitle: string;
-  mark: number | null;
-  maximumMark: number | null;
-  comment: string | null;
-  reviewedAt: string | null;
+	submissionId: number;
+	homeworkId: number;
+	homeworkTitle: string;
+	mark: number | null;
+	maximumMark: number | null;
+	comment: string | null;
+	reviewedAt: string | null;
 };
 
 type StudentData = {
-  id: number;
-  studentCode: string;
-  name: string;
-  batchId: number;
-  batchName: string;
-  phone: string | null;
-  township: string | null;
-  region: string | null;
-  image?: string | null;
-  imagePath?: string | null;
-  imageUrl?: string | null;
-  feedback: Feedback[];
+	id: number;
+	studentCode: string;
+	name: string;
+	batchId: number;
+	batchName: string;
+	phone: string | null;
+	township: string | null;
+	region: string | null;
+	image?: string | null;
+	imagePath?: string | null;
+	imageUrl?: string | null;
+	feedback: Feedback[];
 };
 
-function getArray<T>(
-  value: unknown,
-): T[] {
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
+function getArray<T>(value: unknown): T[] {
+	if (Array.isArray(value)) {
+		return value as T[];
+	}
 
-  if (
-    value &&
-    typeof value === "object" &&
-    "data" in value &&
-    Array.isArray(
-      (value as { data?: unknown }).data,
-    )
-  ) {
-    return (
-      value as { data: T[] }
-    ).data;
-  }
+	if (value && typeof value === 'object' && 'data' in value && Array.isArray((value as { data?: unknown }).data)) {
+		return (value as { data: T[] }).data;
+	}
 
-  return [];
+	return [];
 }
 
-function getErrorMessage(
-  value: unknown,
-  fallback: string,
-): string {
-  if (
-    value &&
-    typeof value === "object" &&
-    "message" in value
-  ) {
-    const message = (
-      value as {
-        message?: unknown;
-      }
-    ).message;
+function getErrorMessage(value: unknown, fallback: string): string {
+	if (value && typeof value === 'object' && 'message' in value) {
+		const message = (
+			value as {
+				message?: unknown;
+			}
+		).message;
 
-    if (
-      typeof message === "string"
-    ) {
-      return message;
-    }
+		if (typeof message === 'string') {
+			return message;
+		}
 
-    if (
-      Array.isArray(message)
-    ) {
-      return message.join(", ");
-    }
-  }
+		if (Array.isArray(message)) {
+			return message.join(', ');
+		}
+	}
 
-  return fallback;
+	return fallback;
 }
 
 const DEFAULT_STUDENT_IMAGE =
-  "data:image/svg+xml;charset=UTF-8," +
-  encodeURIComponent(`
+	'data:image/svg+xml;charset=UTF-8,' +
+	encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
       <rect width="160" height="160" fill="#f3f4f6"/>
       <circle cx="80" cy="60" r="30" fill="#c9a227"/>
@@ -121,1229 +90,553 @@ const DEFAULT_STUDENT_IMAGE =
     </svg>
   `);
 
-function resolveImageUrl(
-  value:
-    | string
-    | null
-    | undefined,
-): string {
-  const image =
-    String(
-      value ?? "",
-    ).trim();
+function resolveImageUrl(value: string | null | undefined): string {
+	const image = String(value ?? '').trim();
 
-  if (!image) {
-    return DEFAULT_STUDENT_IMAGE;
-  }
+	if (!image) {
+		return DEFAULT_STUDENT_IMAGE;
+	}
 
-  if (
-    image.startsWith(
-      "http://",
-    ) ||
-    image.startsWith(
-      "https://",
-    ) ||
-    image.startsWith(
-      "data:image/",
-    ) ||
-    image.startsWith(
-      "blob:",
-    )
-  ) {
-    return image;
-  }
+	if (
+		image.startsWith('http://') ||
+		image.startsWith('https://') ||
+		image.startsWith('data:image/') ||
+		image.startsWith('blob:')
+	) {
+		return image;
+	}
 
-  if (
-    image.startsWith(
-      "/",
-    )
-  ) {
-    return `${API_BASE_URL}${image}`;
-  }
+	if (image.startsWith('/')) {
+		return `${API_BASE_URL}${image}`;
+	}
 
-  return `${API_BASE_URL}/${image}`;
+	return `${API_BASE_URL}/${image}`;
 }
 
-function getStudentImage(
-  student:
-    StudentData,
-): string {
-  return resolveImageUrl(
-    student.image ??
-      student.imagePath ??
-      student.imageUrl ??
-      null,
-  );
+function getStudentImage(student: StudentData): string {
+	return resolveImageUrl(student.image ?? student.imagePath ?? student.imageUrl ?? null);
 }
 
-function formatReviewedDate(
-  value: string | null,
-): string {
-  if (!value) {
-    return "";
-  }
+function formatReviewedDate(value: string | null): string {
+	if (!value) {
+		return '';
+	}
 
-  const date = new Date(value);
+	const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value;
-  }
+	if (Number.isNaN(date.getTime())) {
+		return value;
+	}
 
-  return date.toLocaleString();
+	return date.toLocaleString();
 }
 
 export default function TeacherStudentPage() {
-  const router = useRouter();
+	const router = useRouter();
 
-  const [
-    currentUser,
-    setCurrentUser,
-  ] =
-    useState<LoginUser | null>(
-      null,
-    );
+	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 
-  const [
-    students,
-    setStudents,
-  ] =
-    useState<StudentData[]>([]);
+	const [students, setStudents] = useState<StudentData[]>([]);
 
-  const [
-    selectedStudent,
-    setSelectedStudent,
-  ] =
-    useState<StudentData | null>(
-      null,
-    );
+	const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
-  const [
-    searchTerm,
-    setSearchTerm,
-  ] = useState("");
+	const [searchTerm, setSearchTerm] = useState('');
 
-  const [
-    currentPage,
-    setCurrentPage,
-  ] = useState(1);
+	const [currentPage, setCurrentPage] = useState(1);
 
-  const [loading, setLoading] =
-    useState(true);
+	const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+	const [error, setError] = useState('');
 
-  const apiFetch = useCallback(
-    async (
-      endpoint: string,
-      options: RequestInit = {},
-    ) => {
-      const token =
-        localStorage.getItem(
-          "accessToken",
-        );
+	const apiFetch = useCallback(
+		async (endpoint: string, options: RequestInit = {}) => {
+			const token = localStorage.getItem('accessToken');
 
-      if (!token) {
-        router.replace("/");
-        throw new Error(
-          "Please login first.",
-        );
-      }
+			if (!token) {
+				router.replace('/');
+				throw new Error('Please login first.');
+			}
 
-      const headers =
-        new Headers(
-          options.headers,
-        );
+			const headers = new Headers(options.headers);
 
-      headers.set(
-        "Accept",
-        "application/json",
-      );
+			headers.set('Accept', 'application/json');
 
-      headers.set(
-        "Authorization",
-        `Bearer ${token.trim()}`,
-      );
+			headers.set('Authorization', `Bearer ${token.trim()}`);
 
-      const response =
-        await fetch(
-          `${API_URL}${endpoint}`,
-          {
-            ...options,
-            headers,
-            cache:
-              "no-store",
-          },
-        );
+			const response = await fetch(`${API_URL}${endpoint}`, {
+				...options,
+				headers,
+				cache: 'no-store',
+			});
 
-      const result =
-        await response
-          .json()
-          .catch(
-            () => null,
-          );
+			const result = await response.json().catch(() => null);
 
-      if (
-        response.status === 401
-      ) {
-        localStorage.removeItem(
-          "accessToken",
-        );
+			if (response.status === 401) {
+				localStorage.removeItem('accessToken');
 
-        localStorage.removeItem(
-          "user",
-        );
+				localStorage.removeItem('user');
 
-        router.replace("/");
+				router.replace('/');
 
-        throw new Error(
-          getErrorMessage(
-            result,
-            "Your login session has expired.",
-          ),
-        );
-      }
+				throw new Error(getErrorMessage(result, 'Your login session has expired.'));
+			}
 
-      if (
-        response.status === 403
-      ) {
-        throw new Error(
-          getErrorMessage(
-            result,
-            "Teacher permission is required.",
-          ),
-        );
-      }
+			if (response.status === 403) {
+				throw new Error(getErrorMessage(result, 'Teacher permission is required.'));
+			}
 
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(
-            result,
-            "Failed to load students.",
-          ),
-        );
-      }
+			if (!response.ok) {
+				throw new Error(getErrorMessage(result, 'Failed to load students.'));
+			}
 
-      return result;
-    },
-    [router],
-  );
+			return result;
+		},
+		[router],
+	);
 
-  const loadStudents =
-    useCallback(async () => {
-      setLoading(true);
-      setError("");
+	const loadStudents = useCallback(async () => {
+		setLoading(true);
+		setError('');
 
-      try {
-        /*
-         * 1. Load only the students that belong on the
-         *    Teacher Students page.
-         */
-        const teacherResult =
-          await apiFetch(
-            "/homework-submissions/teacher/students",
-          );
+		try {
+			/*
+			 * 1. Load only the students that belong on the
+			 *    Teacher Students page.
+			 */
+			const teacherResult = await apiFetch('/homework-submissions/teacher/students');
 
-        const teacherStudents =
-          getArray<StudentData>(
-            teacherResult,
-          );
+			const teacherStudents = getArray<StudentData>(teacherResult);
 
-        // The assigned-students endpoint includes each student's database image.
-        setStudents(teacherStudents);
-      } catch (
-        requestError
-      ) {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Failed to load students.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, [apiFetch]);
+			// The assigned-students endpoint includes each student's database image.
+			setStudents(teacherStudents);
+		} catch (requestError) {
+			setError(requestError instanceof Error ? requestError.message : 'Failed to load students.');
+		} finally {
+			setLoading(false);
+		}
+	}, [apiFetch]);
 
-  useEffect(() => {
-    const storedUser =
-      localStorage.getItem(
-        "user",
-      );
+	useEffect(() => {
+		const storedUser = localStorage.getItem('user');
 
-    const token =
-      localStorage.getItem(
-        "accessToken",
-      );
+		const token = localStorage.getItem('accessToken');
 
-    if (
-      !storedUser ||
-      !token
-    ) {
-      router.replace("/");
-      return;
-    }
+		if (!storedUser || !token) {
+			router.replace('/');
+			return;
+		}
 
-    try {
-      const user =
-        JSON.parse(
-          storedUser,
-        ) as LoginUser;
+		try {
+			const user = JSON.parse(storedUser) as LoginUser;
 
-      if (
-        user.role !==
-          "TEACHER" ||
-        user.isActive ===
-          false
-      ) {
-        localStorage.removeItem(
-          "accessToken",
-        );
+			if (user.role !== 'TEACHER' || user.isActive === false) {
+				localStorage.removeItem('accessToken');
 
-        localStorage.removeItem(
-          "user",
-        );
+				localStorage.removeItem('user');
 
-        router.replace("/");
-        return;
-      }
+				router.replace('/');
+				return;
+			}
 
-      setCurrentUser(user);
-      void loadStudents();
-    } catch {
-      localStorage.removeItem(
-        "accessToken",
-      );
+			setCurrentUser(user);
+			void loadStudents();
+		} catch {
+			localStorage.removeItem('accessToken');
 
-      localStorage.removeItem(
-        "user",
-      );
+			localStorage.removeItem('user');
 
-      router.replace("/");
-    }
-  }, [
-    loadStudents,
-    router,
-  ]);
+			router.replace('/');
+		}
+	}, [loadStudents, router]);
 
-  useEffect(() => {
-    if (!selectedStudent) {
-      return;
-    }
+	useEffect(() => {
+		if (!selectedStudent) {
+			return;
+		}
 
-    const closeOnEscape = (
-      event: KeyboardEvent,
-    ) => {
-      if (
-        event.key === "Escape"
-      ) {
-        setSelectedStudent(
-          null,
-        );
-      }
-    };
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setSelectedStudent(null);
+			}
+		};
 
-    document.addEventListener(
-      "keydown",
-      closeOnEscape,
-    );
+		document.addEventListener('keydown', closeOnEscape);
 
-    document.body.style.overflow =
-      "hidden";
+		document.body.style.overflow = 'hidden';
 
-    return () => {
-      document.removeEventListener(
-        "keydown",
-        closeOnEscape,
-      );
+		return () => {
+			document.removeEventListener('keydown', closeOnEscape);
 
-      document.body.style.overflow =
-        "";
-    };
-  }, [selectedStudent]);
+			document.body.style.overflow = '';
+		};
+	}, [selectedStudent]);
 
-   const DEFAULT_AVATAR =
-  "data:image/svg+xml;charset=UTF-8," +
-  encodeURIComponent(`
+	const DEFAULT_AVATAR =
+		'data:image/svg+xml;charset=UTF-8,' +
+		encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
       <rect width="160" height="160" fill="#f3f4f6"/>
       <circle cx="80" cy="60" r="30" fill="#c9a227"/>
       <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
     </svg>
   `);
-  
-  const filteredStudents =
-    useMemo(() => {
-      const keyword =
-        searchTerm
-          .trim()
-          .toLowerCase();
 
-      if (!keyword) {
-        return students;
-      }
+	const filteredStudents = useMemo(() => {
+		const keyword = searchTerm.trim().toLowerCase();
 
-      return students.filter(
-        (student) =>
-          student.name
-            .toLowerCase()
-            .includes(keyword) ||
-          student.studentCode
-            .toLowerCase()
-            .includes(keyword) ||
-          (student.phone ?? "")
-            .toLowerCase()
-            .includes(keyword) ||
-          (student.township ?? "")
-            .toLowerCase()
-            .includes(keyword) ||
-          (student.region ?? "")
-            .toLowerCase()
-            .includes(keyword) ||
-          student.batchName
-            .toLowerCase()
-            .includes(keyword),
-      );
-    }, [
-      searchTerm,
-      students,
-    ]);
+		if (!keyword) {
+			return students;
+		}
 
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filteredStudents.length /
-          PAGE_SIZE,
-      ),
-    );
+		return students.filter(
+			(student) =>
+				student.name.toLowerCase().includes(keyword) ||
+				student.studentCode.toLowerCase().includes(keyword) ||
+				(student.phone ?? '').toLowerCase().includes(keyword) ||
+				(student.township ?? '').toLowerCase().includes(keyword) ||
+				(student.region ?? '').toLowerCase().includes(keyword) ||
+				student.batchName.toLowerCase().includes(keyword),
+		);
+	}, [searchTerm, students]);
 
-  const paginatedStudents =
-    useMemo(() => {
-      const start =
-        (currentPage - 1) *
-        PAGE_SIZE;
+	const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
 
-      return filteredStudents.slice(
-        start,
-        start + PAGE_SIZE,
-      );
-    }, [
-      currentPage,
-      filteredStudents,
-    ]);
+	const paginatedStudents = useMemo(() => {
+		const start = (currentPage - 1) * PAGE_SIZE;
 
-  const firstEntry =
-    filteredStudents.length ===
-      0
-      ? 0
-      : (currentPage - 1) *
-          PAGE_SIZE +
-        1;
+		return filteredStudents.slice(start, start + PAGE_SIZE);
+	}, [currentPage, filteredStudents]);
 
-  const lastEntry =
-    Math.min(
-      currentPage *
-        PAGE_SIZE,
-      filteredStudents.length,
-    );
+	const firstEntry = filteredStudents.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+	const lastEntry = Math.min(currentPage * PAGE_SIZE, filteredStudents.length);
 
-  useEffect(() => {
-    if (
-      currentPage >
-      totalPages
-    ) {
-      setCurrentPage(
-        totalPages,
-      );
-    }
-  }, [
-    currentPage,
-    totalPages,
-  ]);
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchTerm]);
 
-  const handleLogout = () => {
-    localStorage.removeItem(
-      "accessToken",
-    );
+	useEffect(() => {
+		if (currentPage > totalPages) {
+			setCurrentPage(totalPages);
+		}
+	}, [currentPage, totalPages]);
 
-    localStorage.removeItem(
-      "user",
-    );
+	const handleLogout = () => {
+		localStorage.removeItem('accessToken');
 
-    router.replace("/");
-  };
+		localStorage.removeItem('user');
 
-  const closeModal = () => {
-    setSelectedStudent(
-      null,
-    );
-  };
+		router.replace('/');
+	};
 
-  return (
-    <div
-      className={
-        styles.container
-      }
-    >
-      <header
-        className={
-          styles.navbar
-        }
-      >
-        <div
-          className={
-            styles.navLeft
-          }
-        >
-          <MobileNavigation />
-          <div
-            className={
-              styles.logoIcon
-            }
-          >
-            A
-          </div>
+	const closeModal = () => {
+		setSelectedStudent(null);
+	};
 
-          <span
-            className={
-              styles.brandName
-            }
-          >
-            Dhamma Teacher
-          </span>
-        </div>
+	return (
+		<div className={styles.container}>
+			<header className={styles.navbar}>
+				<div className={styles.navLeft}>
+					<MobileNavigation />
+					<div className={styles.logoIcon}>A</div>
 
-        <div
-          className={
-            styles.navRight
-          }
-        >
-         <img src={DEFAULT_AVATAR} alt="Profile" className={styles.profileImg} />
-          <span
-            className={styles.profileName}
-          >
-            {currentUser?.name ??
-              "Super Admin"}
-          </span>
+					<span className={styles.brandName}>Dhamma Teacher</span>
+				</div>
 
-          <button
-            type="button"
-            className={
-              styles.logoutBtn
-            }
-            onClick={
-              handleLogout
-            }
-            title="Logout"
-            aria-label="Logout"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line
-                x1="21"
-                y1="12"
-                x2="9"
-                y2="12"
-              />
-            </svg>
-          </button>
-        </div>
-      </header>
+				<div className={styles.navRight}>
+					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
+					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
 
-      <div
-        className={
-          styles.layoutWrapper
-        }
-      >
-        <aside
-          className={
-            styles.sidebar
-          }
-        >
-          <button
-            type="button"
-            className={
-              styles.sideBtn
-            }
-            onClick={() =>
-              router.push(
-                "/teacher/teacher-dashboard",
-              )
-            }
-          >
-            Homework
-          </button>
+					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout' aria-label='Logout'>
+						<svg
+							width='20'
+							height='20'
+							viewBox='0 0 24 24'
+							fill='none'
+							stroke='currentColor'
+							strokeWidth='2'
+							strokeLinecap='round'
+							strokeLinejoin='round'
+							aria-hidden='true'>
+							<path d='M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 1 2-2h4' />
+							<polyline points='16 17 21 12 16 7' />
+							<line x1='21' y1='12' x2='9' y2='12' />
+						</svg>
+					</button>
+				</div>
+			</header>
 
-          <button
-            type="button"
-            className={`${styles.sideBtn} ${styles.activeBtn}`}
-            onClick={() =>
-              router.push(
-                "/teacher/student",
-              )
-            }
-          >
-            Students
-          </button>
-        </aside>
+			<div className={styles.layoutWrapper}>
+				<aside className={styles.sidebar}>
+					<button type='button' className={styles.sideBtn} onClick={() => router.push('/teacher/teacher-dashboard')}>
+						Homework
+					</button>
 
-        <main
-          className={
-            styles.mainContent
-          }
-        >
-          <div
-            className={
-              styles.contentHeader
-            }
-          >
-            <div>
-              <h1
-                className={
-                  styles.pageTitle
-                }
-              >
-                Students
-              </h1>
+					<button
+						type='button'
+						className={`${styles.sideBtn} ${styles.activeBtn}`}
+						onClick={() => router.push('/teacher/student')}>
+						Students
+					</button>
+				</aside>
 
-              <p
-                className={
-                  styles.pageSubtitle
-                }
-              >
-                Students whose homework has been assigned
-                to you for review are shown.
-              </p>
-            </div>
+				<main className={styles.mainContent}>
+					<div className={styles.contentHeader}>
+						<div>
+							<h1 className={styles.pageTitle}>Students</h1>
 
-            <div
-              className={
-                styles.filters
-              }
-            >
-              <div
-                className={
-                  styles.filterDropdown
-                }
-              >
-                My Assigned Students
-              </div>
+							<p className={styles.pageSubtitle}>
+								Students whose homework has been assigned to you for review are shown.
+							</p>
+						</div>
 
-              <label
-                className={
-                  styles.searchBox
-                }
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="11"
-                    cy="11"
-                    r="8"
-                  />
+						<div className={styles.filters}>
+							<div className={styles.filterDropdown}>My Assigned Students</div>
 
-                  <line
-                    x1="21"
-                    y1="21"
-                    x2="16.65"
-                    y2="16.65"
-                  />
-                </svg>
+							<label className={styles.searchBox}>
+								<svg
+									width='16'
+									height='16'
+									viewBox='0 0 24 24'
+									fill='none'
+									stroke='currentColor'
+									strokeWidth='2'
+									aria-hidden='true'>
+									<circle cx='11' cy='11' r='8' />
 
-                <input
-                  type="search"
-                  aria-label="Search assigned students"
-                  placeholder="Search name, ID, phone or batch"
-                  value={
-                    searchTerm
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    setSearchTerm(
-                      event.target
-                        .value,
-                    )
-                  }
-                />
-              </label>
-            </div>
-          </div>
+									<line x1='21' y1='21' x2='16.65' y2='16.65' />
+								</svg>
 
-          {error && (
-            <div
-              className={
-                styles.errorMessage
-              }
-            >
-              <span>{error}</span>
+								<input
+									type='search'
+									aria-label='Search assigned students'
+									placeholder='Search name, ID, phone or batch'
+									value={searchTerm}
+									onChange={(event) => setSearchTerm(event.target.value)}
+								/>
+							</label>
+						</div>
+					</div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  void loadStudents()
-                }
-              >
-                Retry
-              </button>
-            </div>
-          )}
+					{error && (
+						<div className={styles.errorMessage}>
+							<span>{error}</span>
 
-          <div
-            className={
-              styles.tableContainer
-            }
-          >
-            <table
-              className={
-                styles.table
-              }
-            >
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Image</th>
-                  <th>Name</th>
-                  <th>
-                    Phone Number
-                  </th>
-                  <th>Town</th>
-                  <th>City</th>
-                  <th>
-                    <span
-                      className={
-                        styles.visuallyHidden
-                      }
-                    >
-                      Actions
-                    </span>
-                  </th>
-                </tr>
-              </thead>
+							<button type='button' onClick={() => void loadStudents()}>
+								Retry
+							</button>
+						</div>
+					)}
 
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className={
-                        styles.stateCell
-                      }
-                    >
-                      Loading assigned
-                      students...
-                    </td>
-                  </tr>
-                )}
+					<div className={styles.tableContainer}>
+						<table className={styles.table}>
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Image</th>
+									<th>Name</th>
+									<th>Phone Number</th>
+									<th>Town</th>
+									<th>City</th>
+									<th>
+										<span className={styles.visuallyHidden}>Actions</span>
+									</th>
+								</tr>
+							</thead>
 
-                {!loading &&
-                  paginatedStudents.map(
-                    (student) => (
-                      <tr
-                        key={
-                          student.id
-                        }
-                        className={
-                          styles.tableRow
-                        }
-                        onClick={() =>
-                          setSelectedStudent(
-                            student,
-                          )
-                        }
-                      >
-                        <td
-                          className={
-                            styles.boldText
-                          }
-                        >
-                          {
-                            student.studentCode
-                          }
-                        </td>
+							<tbody>
+								{loading && (
+									<tr>
+										<td colSpan={7} className={styles.stateCell}>
+											Loading assigned students...
+										</td>
+									</tr>
+								)}
 
-                        <td>
-                          <img
-                            src={getStudentImage(
-                              student,
-                            )}
-                            alt={
-                              student.name
-                            }
-                            className={
-                              styles.tableAvatar
-                            }
-                            loading="lazy"
-                            onError={(
-                              event,
-                            ) => {
-                              if (
-                                event.currentTarget.src !==
-                                DEFAULT_STUDENT_IMAGE
-                              ) {
-                                event.currentTarget.src =
-                                  DEFAULT_STUDENT_IMAGE;
-                              }
-                            }}
-                          />
-                        </td>
+								{!loading &&
+									paginatedStudents.map((student) => (
+										<tr
+											key={student.id}
+											className={styles.tableRow}
+											onClick={() => setSelectedStudent(student)}>
+											<td className={styles.boldText}>{student.studentCode}</td>
 
-                        <td>
-                          <div
-                            className={
-                              styles.boldText
-                            }
-                          >
-                            {
-                              student.name
-                            }
-                          </div>
+											<td>
+												<img
+													src={getStudentImage(student)}
+													alt={student.name}
+													className={styles.tableAvatar}
+													loading='lazy'
+													onError={(event) => {
+														if (event.currentTarget.src !== DEFAULT_STUDENT_IMAGE) {
+															event.currentTarget.src = DEFAULT_STUDENT_IMAGE;
+														}
+													}}
+												/>
+											</td>
 
-                          <div
-                            className={
-                              styles.subText
-                            }
-                          >
-                            {
-                              student.batchName
-                            }
-                          </div>
-                        </td>
+											<td>
+												<div className={styles.boldText}>{student.name}</div>
 
-                        <td
-                          className={
-                            styles.boldText
-                          }
-                        >
-                          {student.phone ??
-                            "-"}
-                        </td>
+												<div className={styles.subText}>{student.batchName}</div>
+											</td>
 
-                        <td
-                          className={
-                            styles.boldText
-                          }
-                        >
-                          {student.township ??
-                            "-"}
-                        </td>
+											<td className={styles.boldText}>{student.phone ?? '-'}</td>
 
-                        <td
-                          className={
-                            styles.boldText
-                          }
-                        >
-                          {student.region ??
-                            "-"}
-                        </td>
+											<td className={styles.boldText}>{student.township ?? '-'}</td>
 
-                        <td>
-                          <button
-                            type="button"
-                            className={
-                              styles.actionBtn
-                            }
-                            onClick={(
-                              event,
-                            ) => {
-                              event.stopPropagation();
+											<td className={styles.boldText}>{student.region ?? '-'}</td>
 
-                              setSelectedStudent(
-                                student,
-                              );
-                            }}
-                            aria-label={`View ${student.name}`}
-                            title="View student details"
-                          >
-                            ⋮
-                          </button>
-                        </td>
-                      </tr>
-                    ),
-                  )}
+											<td>
+												<button
+													type='button'
+													className={styles.actionBtn}
+													onClick={(event) => {
+														event.stopPropagation();
 
-                {!loading &&
-                  paginatedStudents.length ===
-                    0 && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className={
-                          styles.stateCell
-                        }
-                      >
-                        No assigned
-                        students found.
-                      </td>
-                    </tr>
-                  )}
-              </tbody>
-            </table>
-          </div>
+														setSelectedStudent(student);
+													}}
+													aria-label={`View ${student.name}`}
+													title='View student details'>
+													⋮
+												</button>
+											</td>
+										</tr>
+									))}
 
-          <div
-            className={
-              styles.paginationFooter
-            }
-          >
-            <div
-              className={
-                styles.entriesText
-              }
-            >
-              Showing {firstEntry} to{" "}
-              {lastEntry} of{" "}
-              {filteredStudents.length}{" "}
-              assigned students
-            </div>
+								{!loading && paginatedStudents.length === 0 && (
+									<tr>
+										<td colSpan={7} className={styles.stateCell}>
+											No assigned students found.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
 
-            <div
-              className={
-                styles.paginationControls
-              }
-            >
-              <button
-                type="button"
-                className={
-                  styles.pageBtn
-                }
-                disabled={
-                  currentPage <= 1
-                }
-                onClick={() =>
-                  setCurrentPage(
-                    (page) =>
-                      Math.max(
-                        1,
-                        page - 1,
-                      ),
-                  )
-                }
-                aria-label="Previous page"
-              >
-                &lt;
-              </button>
+					<div className={styles.paginationFooter}>
+						<div className={styles.entriesText}>
+							Showing {firstEntry} to {lastEntry} of {filteredStudents.length} assigned students
+						</div>
 
-              <button
-                type="button"
-                className={`${styles.pageBtn} ${styles.pageActive}`}
-                aria-current="page"
-              >
-                {currentPage} /{" "}
-                {totalPages}
-              </button>
+						<div className={styles.paginationControls}>
+							<button
+								type='button'
+								className={styles.pageBtn}
+								disabled={currentPage <= 1}
+								onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+								aria-label='Previous page'>
+								&lt;
+							</button>
 
-              <button
-                type="button"
-                className={
-                  styles.pageBtn
-                }
-                disabled={
-                  currentPage >=
-                  totalPages
-                }
-                onClick={() =>
-                  setCurrentPage(
-                    (page) =>
-                      Math.min(
-                        totalPages,
-                        page + 1,
-                      ),
-                  )
-                }
-                aria-label="Next page"
-              >
-                &gt;
-              </button>
-            </div>
-          </div>
+							<button type='button' className={`${styles.pageBtn} ${styles.pageActive}`} aria-current='page'>
+								{currentPage} / {totalPages}
+							</button>
 
-          <div
-            className={
-              styles.footerBrand
-            }
-          >
-            O-Technique-Myanmar-2026@
-          </div>
-        </main>
-      </div>
+							<button
+								type='button'
+								className={styles.pageBtn}
+								disabled={currentPage >= totalPages}
+								onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+								aria-label='Next page'>
+								&gt;
+							</button>
+						</div>
+					</div>
 
-      {selectedStudent && (
-        <div
-          className={
-            styles.modalOverlay
-          }
-          onClick={
-            closeModal
-          }
-          role="presentation"
-        >
-          <section
-            className={
-              styles.modalContent
-            }
-            onClick={(
-              event,
-            ) =>
-              event.stopPropagation()
-            }
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="student-details-title"
-          >
-            <button
-              type="button"
-              className={
-                styles.closeModalBtn
-              }
-              onClick={
-                closeModal
-              }
-              aria-label="Close student details"
-              title="Close"
-            >
-              ×
-            </button>
+					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
+				</main>
+			</div>
 
-            <div
-              className={
-                styles.modalProfileHeader
-              }
-            >
-              <img
-                src={getStudentImage(
-                  selectedStudent,
-                )}
-                alt={
-                  selectedStudent.name
-                }
-                className={
-                  styles.modalAvatar
-                }
-                onError={(
-                  event,
-                ) => {
-                  if (
-                    event.currentTarget.src !==
-                    DEFAULT_STUDENT_IMAGE
-                  ) {
-                    event.currentTarget.src =
-                      DEFAULT_STUDENT_IMAGE;
-                  }
-                }}
-              />
+			{selectedStudent && (
+				<div className={styles.modalOverlay} onClick={closeModal} role='presentation'>
+					<section
+						className={styles.modalContent}
+						onClick={(event) => event.stopPropagation()}
+						role='dialog'
+						aria-modal='true'
+						aria-labelledby='student-details-title'>
+						<button
+							type='button'
+							className={styles.closeModalBtn}
+							onClick={closeModal}
+							aria-label='Close student details'
+							title='Close'>
+							×
+						</button>
 
-              <div>
-                <h2
-                  id="student-details-title"
-                  className={
-                    styles.modalName
-                  }
-                >
-                  {
-                    selectedStudent.name
-                  }
-                </h2>
+						<div className={styles.modalProfileHeader}>
+							<img
+								src={getStudentImage(selectedStudent)}
+								alt={selectedStudent.name}
+								className={styles.modalAvatar}
+								onError={(event) => {
+									if (event.currentTarget.src !== DEFAULT_STUDENT_IMAGE) {
+										event.currentTarget.src = DEFAULT_STUDENT_IMAGE;
+									}
+								}}
+							/>
 
-                <p
-                  className={
-                    styles.modalEmail
-                  }
-                >
-                  {
-                    selectedStudent.studentCode
-                  }
-                </p>
-              </div>
-            </div>
+							<div>
+								<h2 id='student-details-title' className={styles.modalName}>
+									{selectedStudent.name}
+								</h2>
 
-            <div
-              className={
-                styles.modalDetailsList
-              }
-            >
-              <div
-                className={
-                  styles.modalRow
-                }
-              >
-                <strong>
-                  Student ID:
-                </strong>
+								<p className={styles.modalEmail}>{selectedStudent.studentCode}</p>
+							</div>
+						</div>
 
-                <span>
-                  {
-                    selectedStudent.studentCode
-                  }
-                </span>
-              </div>
+						<div className={styles.modalDetailsList}>
+							<div className={styles.modalRow}>
+								<strong>Student ID:</strong>
 
-              <div
-                className={
-                  styles.modalRow
-                }
-              >
-                <strong>
-                  Batch:
-                </strong>
+								<span>{selectedStudent.studentCode}</span>
+							</div>
 
-                <span>
-                  {
-                    selectedStudent.batchName
-                  }
-                </span>
-              </div>
+							<div className={styles.modalRow}>
+								<strong>Batch:</strong>
 
-              <div
-                className={
-                  styles.modalRow
-                }
-              >
-                <strong>
-                  Phone Number:
-                </strong>
+								<span>{selectedStudent.batchName}</span>
+							</div>
 
-                <span>
-                  {selectedStudent.phone ??
-                    "-"}
-                </span>
-              </div>
+							<div className={styles.modalRow}>
+								<strong>Phone Number:</strong>
 
-              <div
-                className={
-                  styles.modalRow
-                }
-              >
-                <strong>
-                  Town:
-                </strong>
+								<span>{selectedStudent.phone ?? '-'}</span>
+							</div>
 
-                <span>
-                  {selectedStudent.township ??
-                    "-"}
-                </span>
-              </div>
+							<div className={styles.modalRow}>
+								<strong>Town:</strong>
 
-              <div
-                className={
-                  styles.modalRow
-                }
-              >
-                <strong>
-                  City:
-                </strong>
+								<span>{selectedStudent.township ?? '-'}</span>
+							</div>
 
-                <span>
-                  {selectedStudent.region ??
-                    "-"}
-                </span>
-              </div>
-            </div>
+							<div className={styles.modalRow}>
+								<strong>City:</strong>
 
-            <div
-              className={
-                styles.feedbackContainer
-              }
-            >
-              {selectedStudent.feedback
-                .length > 0 ? (
-                selectedStudent.feedback.map(
-                  (feedback) => (
-                    <article
-                      key={
-                        feedback.submissionId
-                      }
-                      className={
-                        styles.feedbackCard
-                      }
-                    >
-                      <div
-                        className={
-                          styles.feedbackTop
-                        }
-                      >
-                        <span>
-                          {
-                            feedback.homeworkTitle
-                          }
-                        </span>
+								<span>{selectedStudent.region ?? '-'}</span>
+							</div>
+						</div>
 
-                        <span>
-                          Mark:{" "}
-                          {feedback.mark ??
-                            "-"}
-                          {feedback.maximumMark !==
-                            null
-                            ? ` / ${feedback.maximumMark}`
-                            : ""}
-                        </span>
-                      </div>
+						<div className={styles.feedbackContainer}>
+							{selectedStudent.feedback.length > 0 ?
+								selectedStudent.feedback.map((feedback) => (
+									<article key={feedback.submissionId} className={styles.feedbackCard}>
+										<div className={styles.feedbackComment}>Comment: {feedback.comment ?? 'No comment'}</div>
 
-                      <div
-                        className={
-                          styles.feedbackComment
-                        }
-                      >
-                        Comment:{" "}
-                        {feedback.comment ??
-                          "No comment"}
-                      </div>
-
-                      {feedback.reviewedAt && (
-                        <div
-                          className={
-                            styles.feedbackDate
-                          }
-                        >
-                          Reviewed:{" "}
-                          {formatReviewedDate(
-                            feedback.reviewedAt,
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  ),
-                )
-              ) : (
-                <p
-                  className={
-                    styles.emptyFeedback
-                  }
-                >
-                  No reviewed homework
-                  feedback yet.
-                </p>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
-  );
+										{feedback.reviewedAt && (
+											<div className={styles.feedbackDate}>
+												Reviewed: {formatReviewedDate(feedback.reviewedAt)}
+											</div>
+										)}
+									</article>
+								))
+							:	<p className={styles.emptyFeedback}>No reviewed homework feedback yet.</p>}
+						</div>
+					</section>
+				</div>
+			)}
+		</div>
+	);
 }

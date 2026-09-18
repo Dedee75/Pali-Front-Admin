@@ -1,170 +1,119 @@
-"use client";
+/** @format */
 
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import type {
-  ChangeEvent,
-} from "react";
-import {
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
-import MobileNavigation from "../../../components/MobileNavigation";
-import styles from "./homework-list.module.css";
+'use client';
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000";
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import MobileNavigation from '../../../components/MobileNavigation';
+import styles from './homework-list.module.css';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 type LoginUser = {
-  id: number;
-  name: string;
-  email: string;
-  role: "SUPER_ADMIN" | "TEACHER";
+	id: number;
+	name: string;
+	email: string;
+	role: 'SUPER_ADMIN' | 'TEACHER';
 };
 
-type SubmissionStatus =
-  | "PENDING"
-  | "SUBMITTED"
-  | "REVIEWED";
+type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
 
 type HomeworkImage = {
-  id: number;
-  image: string;
-  marks?: number | null;
-  remark?: string | null;
+	id: number;
+	image: string;
+	marks?: number | null;
+	remark?: string | null;
 };
 
 type Submission = {
-  id: number;
-  homeworkId: number;
-  status: SubmissionStatus;
-  submittedAt?: string | null;
-  totalMarks?: number | null;
-  student: {
-    id: number;
-    name: string;
-    studentCode: string;
-  };
-  images: HomeworkImage[];
-  homework: {
-    id: number;
-    title: string;
-    batch: {
-      id: number;
-      name: string;
-    };
-  };
+	id: number;
+	homeworkId: number;
+	status: SubmissionStatus;
+	submittedAt?: string | null;
+	totalMarks?: number | null;
+	student: {
+		id: number;
+		name: string;
+		studentCode: string;
+	};
+	images: HomeworkImage[];
+	homework: {
+		id: number;
+		title: string;
+		batch: {
+			id: number;
+			name: string;
+		};
+	};
 };
 
 function getArray<T>(value: unknown): T[] {
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
+	if (Array.isArray(value)) {
+		return value as T[];
+	}
 
-  if (
-    value &&
-    typeof value === "object" &&
-    "data" in value &&
-    Array.isArray(
-      (value as { data?: unknown }).data,
-    )
-  ) {
-    return (value as { data: T[] }).data;
-  }
+	if (value && typeof value === 'object' && 'data' in value && Array.isArray((value as { data?: unknown }).data)) {
+		return (value as { data: T[] }).data;
+	}
 
-  return [];
+	return [];
 }
 
 function HomeworkListContent() {
-  const router = useRouter();
-  const searchParams =
-    useSearchParams();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 
-  const homeworkId = Number(
-    searchParams.get("homeworkId"),
-  );
+	const homeworkId = Number(searchParams.get('homeworkId'));
 
-  const status =
-    searchParams.get("status") ??
-    "pending";
+	const status = searchParams.get('status') ?? 'pending';
 
-  const [currentUser, setCurrentUser] =
-    useState<LoginUser | null>(null);
-  const [submissions, setSubmissions] =
-    useState<Submission[]>([]);
-  const [searchTerm, setSearchTerm] =
-    useState("");
-  const [loading, setLoading] =
-    useState(true);
-  const [error, setError] =
-    useState("");
+	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
+	const [submissions, setSubmissions] = useState<Submission[]>([]);
+	const [searchTerm, setSearchTerm] = useState('');
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState('');
 
-  const apiFetch = useCallback(
-    async (endpoint: string) => {
-      const token =
-        localStorage.getItem("accessToken");
+	const apiFetch = useCallback(
+		async (endpoint: string) => {
+			const token = localStorage.getItem('accessToken');
 
-      if (!token) {
-        router.replace("/");
-        throw new Error(
-          "Please login first.",
-        );
-      }
+			if (!token) {
+				router.replace('/');
+				throw new Error('Please login first.');
+			}
 
-      const response = await fetch(
-        `${API_URL}${endpoint}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-       
+			const response = await fetch(`${API_URL}${endpoint}`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
 
-      const result = await response
-        .json()
-        .catch(() => null);
+			const result = await response.json().catch(() => null);
 
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
-        localStorage.removeItem(
-          "accessToken",
-        );
-        localStorage.removeItem("user");
-        router.replace("/");
+			if (response.status === 401 || response.status === 403) {
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('user');
+				router.replace('/');
 
-        throw new Error(
-          "You cannot access this homework.",
-        );
-      }
+				throw new Error('You cannot access this homework.');
+			}
 
-      if (!response.ok) {
-        const message = Array.isArray(
-          result?.message,
-        )
-          ? result.message.join(", ")
-          : result?.message ??
-            "Request failed.";
+			if (!response.ok) {
+				const message =
+					Array.isArray(result?.message) ? result.message.join(', ') : (result?.message ?? 'Request failed.');
 
-        throw new Error(message);
-      }
+				throw new Error(message);
+			}
 
-      return result;
-    },
-    [router],
-  );
+			return result;
+		},
+		[router],
+	);
 
-  const DEFAULT_AVATAR =
-  "data:image/svg+xml;charset=UTF-8," +
-  encodeURIComponent(`
+	const DEFAULT_AVATAR =
+		'data:image/svg+xml;charset=UTF-8,' +
+		encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
       <rect width="160" height="160" fill="#f3f4f6"/>
       <circle cx="80" cy="60" r="30" fill="#c9a227"/>
@@ -172,548 +121,273 @@ function HomeworkListContent() {
     </svg>
   `);
 
-  const loadSubmissions =
-    useCallback(async () => {
-      if (
-        !Number.isInteger(homeworkId) ||
-        homeworkId <= 0
-      ) {
-        setError(
-          "Invalid homework ID.",
-        );
-        setLoading(false);
-        return;
-      }
+	const loadSubmissions = useCallback(async () => {
+		if (!Number.isInteger(homeworkId) || homeworkId <= 0) {
+			setError('Invalid homework ID.');
+			setLoading(false);
+			return;
+		}
 
-      setLoading(true);
-      setError("");
+		setLoading(true);
+		setError('');
 
-      try {
-        const result = await apiFetch(
-          `/homework-submissions/teacher/assigned?homeworkId=${homeworkId}&status=${status}`,
-        );
+		try {
+			const result = await apiFetch(`/homework-submissions/teacher/assigned?homeworkId=${homeworkId}&status=${status}`);
 
-        setSubmissions(
-          getArray<Submission>(
-            result,
-          ),
-        );
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load homework.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, [
-      apiFetch,
-      homeworkId,
-      status,
-    ]);
+			setSubmissions(getArray<Submission>(result));
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to load homework.');
+		} finally {
+			setLoading(false);
+		}
+	}, [apiFetch, homeworkId, status]);
 
-  useEffect(() => {
-    const storedUser =
-      localStorage.getItem("user");
+	useEffect(() => {
+		const storedUser = localStorage.getItem('user');
 
-    if (!storedUser) {
-      router.replace("/");
-      return;
-    }
+		if (!storedUser) {
+			router.replace('/');
+			return;
+		}
 
-    try {
-      const user =
-        JSON.parse(
-          storedUser,
-        ) as LoginUser;
+		try {
+			const user = JSON.parse(storedUser) as LoginUser;
 
-      if (user.role !== "TEACHER") {
-        router.replace("/");
-        return;
-      }
+			if (user.role !== 'TEACHER') {
+				router.replace('/');
+				return;
+			}
 
-      setCurrentUser(user);
-      void loadSubmissions();
-    } catch {
-      router.replace("/");
-    }
-  }, [
-    loadSubmissions,
-    router,
-  ]);
+			setCurrentUser(user);
+			void loadSubmissions();
+		} catch {
+			router.replace('/');
+		}
+	}, [loadSubmissions, router]);
 
-  const filteredData = useMemo(() => {
-    const term =
-      searchTerm.trim().toLowerCase();
+	const filteredData = useMemo(() => {
+		const term = searchTerm.trim().toLowerCase();
 
-    return submissions.filter(
-      (submission) =>
-        !term ||
-        submission.student.name
-          .toLowerCase()
-          .includes(term) ||
-        submission.student.studentCode
-          .toLowerCase()
-          .includes(term),
-    );
-  }, [searchTerm, submissions]);
+		return submissions.filter(
+			(submission) =>
+				!term ||
+				submission.student.name.toLowerCase().includes(term) ||
+				submission.student.studentCode.toLowerCase().includes(term),
+		);
+	}, [searchTerm, submissions]);
 
-  const title =
-    submissions[0]?.homework.title ??
-    "Assignment Details";
+	const title = submissions[0]?.homework.title ?? 'Assignment Details';
 
-  const batchName =
-    submissions[0]?.homework.batch
-      .name ?? "Batch";
+	const batchName = submissions[0]?.homework.batch.name ?? 'Batch';
 
-  const formatDate = (
-    value?: string | null,
-  ) => {
-    if (!value) {
-      return {
-        date: "-",
-        time: "-",
-      };
-    }
+	const formatDate = (value?: string | null) => {
+		if (!value) {
+			return {
+				date: '-',
+				time: '-',
+			};
+		}
 
-    const date = new Date(value);
+		const date = new Date(value);
 
-    return {
-      date:
-        date.toLocaleDateString(),
-      time:
-        date.toLocaleTimeString(
-          [],
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          },
-        ),
-    };
-  };
+		return {
+			date: date.toLocaleDateString(),
+			time: date.toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+			}),
+		};
+	};
 
-  const openDetails = (
-    submissionId: number,
-  ) => {
-    router.push(
-      `/teacher/homework-details?submissionId=${submissionId}`,
-    );
-  };
+	const openDetails = (submissionId: number) => {
+		router.push(`/teacher/homework-details?submissionId=${submissionId}`);
+	};
 
-  const handleLogout = () => {
-    localStorage.removeItem(
-      "accessToken",
-    );
-    localStorage.removeItem("user");
-    router.replace("/");
-  };
+	const handleLogout = () => {
+		localStorage.removeItem('accessToken');
+		localStorage.removeItem('user');
+		router.replace('/');
+	};
 
-  return (
-    <div className={styles.container}>
-      <header className={styles.navbar}>
-        <div className={styles.navLeft}>
-          <MobileNavigation />
-          <div
-            className={styles.logoIcon}
-          >
-            A
-          </div>
-          <span
-            className={styles.brandName}
-          >
-            Dhamma Teacher
-          </span>
-        </div>
+	return (
+		<div className={styles.container}>
+			<header className={styles.navbar}>
+				<div className={styles.navLeft}>
+					<MobileNavigation />
+					<div className={styles.logoIcon}>A</div>
+					<span className={styles.brandName}>Dhamma Teacher</span>
+				</div>
 
-        <div className={styles.navRight}>
-         <img src={DEFAULT_AVATAR} alt="Profile" className={styles.profileImg} />
-          <span
-            className={styles.profileName}
-          >
-            {currentUser?.name ??
-              "Super Admin"}
-          </span>
-          <button
-            type="button"
-            className={
-              styles.logoutBtn
-            }
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#b8860b"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line
-                x1="21"
-                y1="12"
-                x2="9"
-                y2="12"
-              />
-            </svg>
-          </button>
-        </div>
-      </header>
+				<div className={styles.navRight}>
+					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
+					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
+					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout'>
+						<svg
+							width='20'
+							height='20'
+							viewBox='0 0 24 24'
+							fill='none'
+							stroke='#b8860b'
+							strokeWidth='2'
+							strokeLinecap='round'
+							strokeLinejoin='round'>
+							<path d='M9 21H5a2 2 0 0 0-2-2V5a2 2 0 0 1 2-2h4' />
+							<polyline points='16 17 21 12 16 7' />
+							<line x1='21' y1='12' x2='9' y2='12' />
+						</svg>
+					</button>
+				</div>
+			</header>
 
-      <div
-        className={
-          styles.layoutWrapper
-        }
-      >
-        <aside
-          className={styles.sidebar}
-        >
-          <button
-            type="button"
-            className={`${styles.sideBtn} ${styles.activeBtn}`}
-            onClick={() =>
-              router.push(
-                "/teacher/teacher-dashboard",
-              )
-            }
-          >
-            Homework
-          </button>
+			<div className={styles.layoutWrapper}>
+				<aside className={styles.sidebar}>
+					<button
+						type='button'
+						className={`${styles.sideBtn} ${styles.activeBtn}`}
+						onClick={() => router.push('/teacher/teacher-dashboard')}>
+						Homework
+					</button>
 
-          <button
-            type="button"
-            className={styles.sideBtn}
-            onClick={() =>
-              router.push(
-                "/teacher/student",
-              )
-            }
-          >
-            Students
-          </button>
-        </aside>
+					<button type='button' className={styles.sideBtn} onClick={() => router.push('/teacher/student')}>
+						Students
+					</button>
+				</aside>
 
-        <main
-          className={
-            styles.mainContent
-          }
-        >
-          <div
-            className={
-              styles.backBtnContainer
-            }
-          >
-            <button
-              type="button"
-              className={styles.backBtn}
-              onClick={() =>
-                router.push(
-                  "/teacher/teacher-dashboard",
-                )
-              }
-            >
-              <span aria-hidden="true">
-                ←
-              </span>
-              Back to Dashboard
-            </button>
-          </div>
+				<main className={styles.mainContent}>
+					<div className={styles.backBtnContainer}>
+						<button
+							type='button'
+							className={styles.backBtn}
+							onClick={() => router.push('/teacher/teacher-dashboard')}>
+							<span aria-hidden='true'>←</span>
+							Back to Dashboard
+						</button>
+					</div>
 
-          <div
-            className={
-              styles.contentHeader
-            }
-          >
-            <div>
-              <h1
-                className={
-                  styles.pageTitle
-                }
-              >
-                {batchName}
-              </h1>
-              <p
-                className={
-                  styles.pageSubtitle
-                }
-              >
-                {title}
-              </p>
-            </div>
+					<div className={styles.contentHeader}>
+						<div>
+							<h1 className={styles.pageTitle}>{batchName}</h1>
+							<p className={styles.pageSubtitle}>{title}</p>
+						</div>
 
-            <div
-              className={styles.filters}
-            >
-              <div
-                className={
-                  styles.filterDropdown
-                }
-              >
-                {status === "completed"
-                  ? "Reviewed"
-                  : "Pending"}
-              </div>
+						<div className={styles.filters}>
+							<div className={styles.filterDropdown}>{status === 'completed' ? 'Reviewed' : 'Pending'}</div>
 
-              <div
-                className={
-                  styles.searchBox
-                }
-              >
-                <input
-                  type="text"
-                  placeholder="Search Name or ID..."
-                  value={searchTerm}
-                  onChange={(
-                    event: ChangeEvent<HTMLInputElement>,
-                  ) =>
-                    setSearchTerm(
-                      event.target.value,
-                    )
-                  }
-                />
-              </div>
-            </div>
-          </div>
+							<div className={styles.searchBox}>
+								<input
+									type='text'
+									placeholder='Search Name or ID...'
+									value={searchTerm}
+									onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+								/>
+							</div>
+						</div>
+					</div>
 
-          {error && (
-            <div
-              style={{
-                color: "#dc2626",
-                background:
-                  "#fef2f2",
-                padding:
-                  "12px 14px",
-                borderRadius: "8px",
-                marginBottom: "16px",
-              }}
-            >
-              {error}
-            </div>
-          )}
+					{error && (
+						<div
+							style={{
+								color: '#dc2626',
+								background: '#fef2f2',
+								padding: '12px 14px',
+								borderRadius: '8px',
+								marginBottom: '16px',
+							}}>
+							{error}
+						</div>
+					)}
 
-          <div
-            className={
-              styles.tableContainer
-            }
-          >
-            <table
-              className={styles.table}
-            >
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date Time</th>
-                  <th>
-                    Student Name / ID
-                  </th>
-                  <th>Paper - 1</th>
-                  <th>Paper - 2</th>
-                  <th>Paper - 3</th>
-                  <th>Paper - 4</th>
-                  <th>Paper - 5</th>
-                  <th>Paper - 6</th>
-                  <th>Total</th>
-                  <th />
-                </tr>
-              </thead>
+					<div className={styles.tableContainer}>
+						<table className={styles.table}>
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Date Time</th>
+									<th>Student Name / ID</th>
+									<th>Pages</th>
 
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td
-                      colSpan={11}
-                      style={{
-                        textAlign:
-                          "center",
-                        padding: "30px",
-                      }}
-                    >
-                      Loading assigned
-                      students...
-                    </td>
-                  </tr>
-                )}
+									<th />
+								</tr>
+							</thead>
 
-                {!loading &&
-                  filteredData.map(
-                    (
-                      submission,
-                      index,
-                    ) => {
-                      const date =
-                        formatDate(
-                          submission.submittedAt,
-                        );
+							<tbody>
+								{loading && (
+									<tr>
+										<td
+											colSpan={5}
+											style={{
+												textAlign: 'center',
+												padding: '30px',
+											}}>
+											Loading assigned students...
+										</td>
+									</tr>
+								)}
 
-                      return (
-                        <tr
-                          key={
-                            submission.id
-                          }
-                          className={`${submission.status !== "REVIEWED" ? styles.rowPending : ""} ${styles.clickableRow}`}
-                          onClick={() =>
-                            openDetails(
-                              submission.id,
-                            )
-                          }
-                        >
-                          <td
-                            className={
-                              styles.boldText
-                            }
-                          >
-                            {String(
-                              index + 1,
-                            ).padStart(
-                              2,
-                              "0",
-                            )}
-                          </td>
+								{!loading &&
+									filteredData.map((submission, index) => {
+										const date = formatDate(submission.submittedAt);
 
-                          <td>
-                            <div
-                              className={
-                                styles.boldText
-                              }
-                            >
-                              {date.date}
-                            </div>
-                            <div
-                              className={
-                                styles.subText
-                              }
-                            >
-                              {date.time}
-                            </div>
-                          </td>
+										return (
+											<tr
+												key={submission.id}
+												className={`${submission.status !== 'REVIEWED' ? styles.rowPending : ''} ${styles.clickableRow}`}
+												onClick={() => openDetails(submission.id)}>
+												<td className={styles.boldText}>{String(index + 1).padStart(2, '0')}</td>
 
-                          <td>
-                            <div
-                              className={
-                                styles.boldText
-                              }
-                            >
-                              {
-                                submission
-                                  .student
-                                  .name
-                              }
-                            </div>
-                            <div
-                              className={
-                                styles.subText
-                              }
-                            >
-                              {
-                                submission
-                                  .student
-                                  .studentCode
-                              }
-                            </div>
-                          </td>
+												<td>
+													<div className={styles.boldText}>{date.date}</div>
+													<div className={styles.subText}>{date.time}</div>
+												</td>
 
-                          {[
-                            0, 1, 2, 3,
-                            4, 5,
-                          ].map(
-                            (
-                              imageIndex,
-                            ) => (
-                              <td
-                                key={
-                                  imageIndex
-                                }
-                              >
-                                <div
-                                  className={
-                                    styles.docIcon
-                                  }
-                                >
-                                  {submission
-                                    .images[
-                                    imageIndex
-                                  ]?.marks ??
-                                    ""}
-                                </div>
-                              </td>
-                            ),
-                          )}
+												<td>
+													<div className={styles.boldText}>{submission.student.name}</div>
+													<div className={styles.subText}>{submission.student.studentCode}</div>
+												</td>
 
-                          <td
-                            className={
-                              styles.boldText
-                            }
-                          >
-                            {submission.status ===
-                            "REVIEWED"
-                              ? submission.totalMarks ??
-                                0
-                              : "-"}
-                          </td>
+												<td>{submission.images?.length ?? 0}</td>
 
-                          <td>
-                            <button
-                              type="button"
-                              className={
-                                styles.actionBtn
-                              }
-                              onClick={(
-                                event,
-                              ) => {
-                                event.stopPropagation();
-                                openDetails(
-                                  submission.id,
-                                );
-                              }}
-                            >
-                              ⋮
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    },
-                  )}
+												<td>
+													<button
+														type='button'
+														className={styles.actionBtn}
+														onClick={(event) => {
+															event.stopPropagation();
+															openDetails(submission.id);
+														}}>
+														⋮
+													</button>
+												</td>
+											</tr>
+										);
+									})}
 
-                {!loading &&
-                  filteredData.length ===
-                    0 && (
-                    <tr>
-                      <td
-                        colSpan={11}
-                        style={{
-                          textAlign:
-                            "center",
-                          padding: "30px",
-                          color: "#777",
-                        }}
-                      >
-                        No assigned
-                        students found.
-                      </td>
-                    </tr>
-                  )}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+								{!loading && filteredData.length === 0 && (
+									<tr>
+										<td
+											colSpan={5}
+											style={{
+												textAlign: 'center',
+												padding: '30px',
+												color: '#777',
+											}}>
+											No assigned students found.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
+				</main>
+			</div>
+		</div>
+	);
 }
 
 export default function HomeworkListPage() {
-  return (
-    <Suspense
-      fallback={
-        <div>Loading Data...</div>
-      }
-    >
-      <HomeworkListContent />
-    </Suspense>
-  );
+	return (
+		<Suspense fallback={<div>Loading Data...</div>}>
+			<HomeworkListContent />
+		</Suspense>
+	);
 }
