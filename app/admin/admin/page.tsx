@@ -73,7 +73,7 @@ export default function AdminPage() {
 	// =========================================
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -93,8 +93,8 @@ export default function AdminPage() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401) {
-				localStorage.removeItem('accessToken');
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('accessToken');
+				sessionStorage.removeItem('user');
 
 				router.replace('/');
 
@@ -137,7 +137,7 @@ export default function AdminPage() {
 	// Initial Load
 	// =========================================
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -155,8 +155,8 @@ export default function AdminPage() {
 			setCurrentUser(parsedUser);
 			void fetchUsers();
 		} catch {
-			localStorage.removeItem('accessToken');
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('accessToken');
+			sessionStorage.removeItem('user');
 			router.replace('/');
 		}
 	}, [fetchUsers, router]);
@@ -301,8 +301,8 @@ export default function AdminPage() {
 	// Logout
 	// =========================================
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('accessToken');
+		sessionStorage.removeItem('user');
 
 		router.replace('/');
 	};

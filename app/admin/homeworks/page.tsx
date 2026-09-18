@@ -134,7 +134,7 @@ export default function AdminHomeworkPage() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -157,9 +157,9 @@ export default function AdminHomeworkPage() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401) {
-				localStorage.removeItem('accessToken');
+				sessionStorage.removeItem('accessToken');
 
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('user');
 
 				router.replace('/');
 
@@ -224,7 +224,7 @@ export default function AdminHomeworkPage() {
 	);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -244,9 +244,9 @@ export default function AdminHomeworkPage() {
 
 			void fetchData();
 		} catch {
-			localStorage.removeItem('accessToken');
+			sessionStorage.removeItem('accessToken');
 
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('user');
 
 			router.replace('/');
 		}
@@ -479,9 +479,9 @@ export default function AdminHomeworkPage() {
 	};
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
+		sessionStorage.removeItem('accessToken');
 
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('user');
 
 		router.replace('/');
 	};

@@ -53,7 +53,7 @@ export default function TeacherDashboardPage() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -69,8 +69,8 @@ export default function TeacherDashboardPage() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401) {
-				localStorage.removeItem('accessToken');
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('accessToken');
+				sessionStorage.removeItem('user');
 				router.replace('/');
 
 				throw new Error('Your login session has expired.');
@@ -109,7 +109,7 @@ export default function TeacherDashboardPage() {
 	}, [apiFetch]);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -127,8 +127,8 @@ export default function TeacherDashboardPage() {
 			setCurrentUser(user);
 			void loadDashboard();
 		} catch {
-			localStorage.removeItem('accessToken');
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('accessToken');
+			sessionStorage.removeItem('user');
 			router.replace('/');
 		}
 	}, [loadDashboard, router]);
@@ -170,8 +170,8 @@ export default function TeacherDashboardPage() {
 	const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('accessToken');
+		sessionStorage.removeItem('user');
 		router.replace('/');
 	};
 

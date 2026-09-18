@@ -172,7 +172,7 @@ function AdminHomeworkListContent() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -195,9 +195,9 @@ function AdminHomeworkListContent() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401) {
-				localStorage.removeItem('accessToken');
+				sessionStorage.removeItem('accessToken');
 
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('user');
 
 				router.replace('/');
 
@@ -261,7 +261,7 @@ function AdminHomeworkListContent() {
 	);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -280,9 +280,9 @@ function AdminHomeworkListContent() {
 
 			void fetchData();
 		} catch {
-			localStorage.removeItem('accessToken');
+			sessionStorage.removeItem('accessToken');
 
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('user');
 
 			router.replace('/');
 		}
@@ -556,9 +556,9 @@ function AdminHomeworkListContent() {
   `);
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
+		sessionStorage.removeItem('accessToken');
 
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('user');
 
 		setCurrentUser(null);
 

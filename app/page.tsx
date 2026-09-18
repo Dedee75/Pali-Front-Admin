@@ -70,13 +70,17 @@ export default function AdminLoginPage() {
 
       const data = result as LoginResponse;
 
-      // Save login information
-      localStorage.setItem(
+      if (!data.accessToken || !data.user || !["SUPER_ADMIN", "TEACHER"].includes(data.user.role)) {
+        throw new Error("Invalid login response or user role");
+      }
+
+      // Keep this login isolated from other browser tabs.
+      sessionStorage.setItem(
         "accessToken",
         data.accessToken,
       );
 
-      localStorage.setItem(
+      sessionStorage.setItem(
         "user",
         JSON.stringify(data.user),
       );

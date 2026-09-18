@@ -85,7 +85,7 @@ function HomeworkDetailsContent() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -160,7 +160,7 @@ function HomeworkDetailsContent() {
 	}, [apiFetch, submissionId]);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -230,8 +230,8 @@ function HomeworkDetailsContent() {
 	};
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('accessToken');
+		sessionStorage.removeItem('user');
 		router.replace('/');
 	};
 

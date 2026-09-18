@@ -150,7 +150,7 @@ export default function TeacherStudentPage() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -172,9 +172,9 @@ export default function TeacherStudentPage() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401) {
-				localStorage.removeItem('accessToken');
+				sessionStorage.removeItem('accessToken');
 
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('user');
 
 				router.replace('/');
 
@@ -217,9 +217,9 @@ export default function TeacherStudentPage() {
 	}, [apiFetch]);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
-		const token = localStorage.getItem('accessToken');
+		const token = sessionStorage.getItem('accessToken');
 
 		if (!storedUser || !token) {
 			router.replace('/');
@@ -230,9 +230,9 @@ export default function TeacherStudentPage() {
 			const user = JSON.parse(storedUser) as LoginUser;
 
 			if (user.role !== 'TEACHER' || user.isActive === false) {
-				localStorage.removeItem('accessToken');
+				sessionStorage.removeItem('accessToken');
 
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('user');
 
 				router.replace('/');
 				return;
@@ -241,9 +241,9 @@ export default function TeacherStudentPage() {
 			setCurrentUser(user);
 			void loadStudents();
 		} catch {
-			localStorage.removeItem('accessToken');
+			sessionStorage.removeItem('accessToken');
 
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('user');
 
 			router.replace('/');
 		}
@@ -322,9 +322,9 @@ export default function TeacherStudentPage() {
 	}, [currentPage, totalPages]);
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
+		sessionStorage.removeItem('accessToken');
 
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('user');
 
 		router.replace('/');
 	};

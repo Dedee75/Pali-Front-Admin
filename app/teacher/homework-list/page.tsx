@@ -76,7 +76,7 @@ function HomeworkListContent() {
 
 	const apiFetch = useCallback(
 		async (endpoint: string) => {
-			const token = localStorage.getItem('accessToken');
+			const token = sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
@@ -92,8 +92,8 @@ function HomeworkListContent() {
 			const result = await response.json().catch(() => null);
 
 			if (response.status === 401 || response.status === 403) {
-				localStorage.removeItem('accessToken');
-				localStorage.removeItem('user');
+				sessionStorage.removeItem('accessToken');
+				sessionStorage.removeItem('user');
 				router.replace('/');
 
 				throw new Error('You cannot access this homework.');
@@ -143,7 +143,7 @@ function HomeworkListContent() {
 	}, [apiFetch, homeworkId, status]);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
+		const storedUser = sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -204,8 +204,8 @@ function HomeworkListContent() {
 	};
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('accessToken');
+		sessionStorage.removeItem('user');
 		router.replace('/');
 	};
 

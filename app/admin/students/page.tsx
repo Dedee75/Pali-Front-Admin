@@ -109,7 +109,7 @@ function getErrorMessage(payload: unknown, fallback: string) {
 }
 
 function getAuthHeaders(): Record<string, string> {
-	const token = localStorage.getItem('accessToken');
+	const token = sessionStorage.getItem('accessToken');
 
 	return token ?
 			{
@@ -218,31 +218,33 @@ export default function AdminStudentPage() {
 	};
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem('user');
-
-		if (storedUser) {
-			try {
-				const parsedUser = JSON.parse(storedUser) as CurrentUser | { user?: CurrentUser };
-
-				const resolvedUser = 'user' in parsedUser && parsedUser.user ? parsedUser.user : parsedUser;
-
-				setCurrentUser(resolvedUser as CurrentUser);
-			} catch (error) {
-				console.error('Invalid user data in localStorage:', error);
-
-				localStorage.removeItem('user');
-			}
+		const storedUser = sessionStorage.getItem('user');
+		if (!storedUser || !sessionStorage.getItem('accessToken')) {
+			router.replace('/');
+			return;
 		}
-
-		void fetchStudents();
+		try {
+			const parsedUser = JSON.parse(storedUser) as CurrentUser | { user?: CurrentUser };
+			const resolvedUser = ('user' in parsedUser && parsedUser.user ? parsedUser.user : parsedUser) as CurrentUser;
+			if (resolvedUser.role !== 'SUPER_ADMIN') {
+				router.replace(resolvedUser.role === 'TEACHER' ? '/teacher/teacher-dashboard' : '/');
+				return;
+			}
+			setCurrentUser(resolvedUser);
+			void fetchStudents();
+		} catch {
+			sessionStorage.removeItem('user');
+			sessionStorage.removeItem('accessToken');
+			router.replace('/');
+		}
 	}, []);
 
 	// --- HANDLERS ---
 
 	const handleLogout = () => {
-		localStorage.removeItem('accessToken');
+		sessionStorage.removeItem('accessToken');
 
-		localStorage.removeItem('user');
+		sessionStorage.removeItem('user');
 
 		setCurrentUser(null);
 

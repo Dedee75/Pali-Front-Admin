@@ -9,7 +9,7 @@ export const useApiFetch = () => {
 
   const apiFetch = useCallback(
     async (endpoint: string) => {
-      const token = localStorage.getItem("accessToken");
+      const token = sessionStorage.getItem("accessToken");
 
       if (!token) {
         router.replace("/");
