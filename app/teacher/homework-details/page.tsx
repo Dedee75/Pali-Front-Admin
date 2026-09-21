@@ -10,7 +10,8 @@ import styles from './homework-detail.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_BACKEND_ORIGIN ?? 'http://localhost:3000';
+// Use the same deployed backend as API requests unless uploads have a separate host.
+const BACKEND_ORIGIN = (process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim() || API_URL).replace(/\/+$/, '');
 
 type LoginUser = {
 	id: number;
