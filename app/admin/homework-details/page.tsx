@@ -2,5 +2,5 @@
 
 import HomeworkReview from '../../../components/HomeworkReview';
 export default function Page() {
-	return <HomeworkReview />;
+	return <HomeworkReview admin />;
 }

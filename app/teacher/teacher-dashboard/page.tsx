@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './teacher-dashboard.module.css';
 
@@ -48,6 +49,7 @@ export default function TeacherDashboardPage() {
 
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 	const [assignments, setAssignments] = useState<HomeworkSummary[]>([]);
+	const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 
@@ -72,7 +74,6 @@ export default function TeacherDashboardPage() {
 				sessionStorage.removeItem('accessToken');
 				sessionStorage.removeItem('user');
 				router.replace('/');
-
 				throw new Error('Your login session has expired.');
 			}
 
@@ -84,7 +85,6 @@ export default function TeacherDashboardPage() {
 			if (!response.ok) {
 				const message =
 					Array.isArray(result?.message) ? result.message.join(', ') : (result?.message ?? 'Request failed.');
-
 				throw new Error(message);
 			}
 
@@ -99,7 +99,6 @@ export default function TeacherDashboardPage() {
 
 		try {
 			const result = await apiFetch('/homework-submissions/teacher/dashboard');
-
 			setAssignments(getArray<HomeworkSummary>(result));
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load dashboard.');
@@ -144,26 +143,34 @@ export default function TeacherDashboardPage() {
   `);
 
 	const groupedAssignments = useMemo(() => {
-		const groups = new Map<string, HomeworkSummary[]>();
+		const groups = new Map<number, HomeworkSummary[]>();
 
 		for (const assignment of assignments) {
-			const batchName = assignment.batch.name;
-
-			const current = groups.get(batchName) ?? [];
+			const batchId = assignment.batch.id;
+			const current = groups.get(batchId) ?? [];
 
 			current.push(assignment);
-			groups.set(batchName, current);
+			groups.set(batchId, current);
 		}
 
-		return Array.from(groups.entries()).map(([batchName, items]) => ({
-			batchName,
-			items: [...items].sort((a, b) => b.pendingCount - a.pendingCount),
+		return Array.from(groups.entries()).map(([batchId, items]) => ({
+			batchId,
+			batchName: items[0].batch.name,
+
+			// Newest homework first
+			items: [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+
+			homeworkCount: items.length,
+
+			hasPending: items.some((item) => item.pendingCount > 0),
 		}));
 	}, [assignments]);
 
+	const allHomeworkCount = assignments.length;
+	const hasAnyPending = assignments.some((assignment) => assignment.pendingCount > 0);
+
 	const openHomework = (assignment: HomeworkSummary) => {
 		const status = assignment.pendingCount > 0 ? 'pending' : 'completed';
-
 		router.push(`/teacher/homework-list?homeworkId=${assignment.homeworkId}&status=${status}`);
 	};
 
@@ -206,20 +213,12 @@ export default function TeacherDashboardPage() {
 			</header>
 
 			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button type='button' className={`${styles.sideBtn} ${styles.activeBtn}`}>
-						Homework
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/teacher/student')}>
-						Students
-					</button>
-				</aside>
+				<Sidebar />
 
 				<main className={styles.mainContent}>
 					<div className={styles.contentHeader}>
 						<div>
-							<h1 className={styles.pageTitle}>Dashboard</h1>
+							<h1 className={styles.pageTitle}>Homework</h1>
 							<p className={styles.pageSubtitle}>Only homework assigned to your account is shown.</p>
 						</div>
 					</div>
@@ -237,84 +236,101 @@ export default function TeacherDashboardPage() {
 						</div>
 					)}
 
+					<nav className={styles.batchTabs} aria-label='Filter homework by batch'>
+						<button type='button' aria-pressed={selectedBatch === null} onClick={() => setSelectedBatch(null)}>
+							<span className={styles.batchTabContent}>
+								<span>All</span>
+								<span className={styles.batchHomeworkCount}>{allHomeworkCount}</span>
+							</span>
+							{hasAnyPending && (
+								<span className={styles.batchNotificationDot} aria-label='Homework waiting to be checked' />
+							)}
+						</button>
+
+						{groupedAssignments.map((group) => (
+							<button
+								type='button'
+								key={group.batchId}
+								aria-pressed={selectedBatch === group.batchId}
+								onClick={() => setSelectedBatch(group.batchId)}>
+								<span className={styles.batchTabContent}>
+									<span>{group.batchName}</span>
+									<span className={styles.batchHomeworkCount}>{group.homeworkCount}</span>
+								</span>
+								{group.hasPending && (
+									<span className={styles.batchNotificationDot} aria-label='Homework waiting to be checked' />
+								)}
+							</button>
+						))}
+					</nav>
+
 					<div className={styles.scrollContainer}>
-						{loading && (
-							<div
-								style={{
-									padding: '40px',
-									textAlign: 'center',
-								}}>
-								Loading assigned homework...
-							</div>
-						)}
+						{loading && <div style={{ padding: '40px', textAlign: 'center' }}>Loading assigned homework...</div>}
 
 						{!loading &&
-							groupedAssignments.map((group) => (
-								<section key={group.batchName} className={styles.batchSection}>
-									<h2 className={styles.batchTitle}>{group.batchName}</h2>
+							groupedAssignments
+								.filter((group) => selectedBatch === null || group.batchId === selectedBatch)
+								.map((group) => (
+									<section key={group.batchId} className={styles.batchSection}>
+										<h2 className={styles.batchTitle}>{group.batchName}</h2>
 
-									<div className={styles.cardRowWrapper}>
-										<div className={styles.cardRow}>
-											{group.items.map((task) => {
-												const isPending = task.pendingCount > 0;
+										<div className={styles.cardRowWrapper}>
+											<div className={styles.cardRow}>
+												{group.items.map((task) => {
+													const isPending = task.pendingCount > 0;
 
-												return (
-													<div
-														key={task.homeworkId}
-														className={`${styles.card} ${
-															isPending ? styles.cardPending : styles.cardCompleted
-														}`}>
-														<h3 className={styles.cardTitle}>{task.title}</h3>
+													return (
+														<div
+															key={task.homeworkId}
+															className={`${styles.card} ${
+																isPending ? styles.cardPending : styles.cardCompleted
+															}`}>
+															<h3 className={styles.cardTitle}>{task.title}</h3>
 
-														<div className={styles.cardDetails}>
-															<div className={styles.detailRow}>
-																<span>Date</span>
-																<span>{formatDate(task.createdAt)}</span>
+															<div className={styles.cardDetails}>
+																<div className={styles.detailRow}>
+																	<span>Date</span>
+																	<span>{formatDate(task.createdAt)}</span>
+																</div>
+
+																<div className={styles.detailRow}>
+																	<span>Close</span>
+																	<span>{formatDate(task.dueDate)}</span>
+																</div>
+
+																<div className={styles.detailRow}>
+																	<span>Assigned</span>
+																	<span>{task.assignedCount}</span>
+																</div>
+
+																<div className={styles.detailRow}>
+																	<span>Checked</span>
+																	<span>{task.checkedCount}</span>
+																</div>
 															</div>
 
-															<div className={styles.detailRow}>
-																<span>Close</span>
-																<span>{formatDate(task.dueDate)}</span>
-															</div>
+															<div className={styles.cardBottom}>
+																<div className={styles.avatarGroup}>
+																	<div className={styles.avatarMore}>+{task.assignedCount}</div>
+																</div>
 
-															<div className={styles.detailRow}>
-																<span>Assigned</span>
-																<span>{task.assignedCount}</span>
-															</div>
-
-															<div className={styles.detailRow}>
-																<span>Checked</span>
-																<span>{task.checkedCount}</span>
+																<button
+																	type='button'
+																	className={isPending ? styles.btnCheck : styles.btnView}
+																	onClick={() => openHomework(task)}>
+																	{isPending ? `Check (${task.pendingCount})` : 'View'}
+																</button>
 															</div>
 														</div>
-
-														<div className={styles.cardBottom}>
-															<div className={styles.avatarGroup}>
-																<div className={styles.avatarMore}>+{task.assignedCount}</div>
-															</div>
-
-															<button
-																type='button'
-																className={isPending ? styles.btnCheck : styles.btnView}
-																onClick={() => openHomework(task)}>
-																{isPending ? `Check (${task.pendingCount})` : 'View'}
-															</button>
-														</div>
-													</div>
-												);
-											})}
+													);
+												})}
+											</div>
 										</div>
-									</div>
-								</section>
-							))}
+									</section>
+								))}
 
 						{!loading && assignments.length === 0 && (
-							<div
-								style={{
-									padding: '50px',
-									textAlign: 'center',
-									color: '#777',
-								}}>
+							<div style={{ padding: '50px', textAlign: 'center', color: '#777' }}>
 								No homework has been assigned to your account.
 							</div>
 						)}

@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './student.module.css';
 
@@ -367,18 +368,7 @@ export default function TeacherStudentPage() {
 			</header>
 
 			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/teacher/teacher-dashboard')}>
-						Homework
-					</button>
-
-					<button
-						type='button'
-						className={`${styles.sideBtn} ${styles.activeBtn}`}
-						onClick={() => router.push('/teacher/student')}>
-						Students
-					</button>
-				</aside>
+				<Sidebar />
 
 				<main className={styles.mainContent}>
 					<div className={styles.contentHeader}>

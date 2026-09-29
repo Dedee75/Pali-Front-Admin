@@ -443,7 +443,7 @@
   }
 
   .backBtn {
-    width: 100%;
+    width: 50%;
   }
 
   .filters {
@@ -515,3 +515,47 @@
   .paginationControls { flex-wrap: wrap; }
   .modalContent, .formModalContent { padding: 22px 18px; }
 }
+
+/* Admin-style review actions and compact student cards. */
+.table { min-width: 0; }
+.submissionRow:hover { background: #fff8e5; }
+.reviewBtn { min-height: 44px; padding: 10px 16px; border: 1px solid #d8d8d8; border-radius: 10px; background: #fff; color: #555; font: inherit; font-weight: 600; cursor: pointer; }
+.reviewBtn:hover { background: #fff8e5; border-color: #b8860b; }
+.reviewBtn:focus-visible { outline: 2px solid #b8860b; outline-offset: 2px; }
+.filters { flex-wrap: wrap; min-width: 0; }
+.searchBox { min-width: 0; }
+@media (max-width: 1024px) {
+ .contentHeader { flex-direction: column; align-items: stretch; gap: 16px; }
+ .filters { width: 100%; display: flex; gap: 12px; }
+ .searchBox { flex: 1; width: auto; }
+ .searchBox input { width: 100%; box-sizing: border-box; }
+}
+@media (max-width: 650px) {
+ .filters { flex-direction: column; align-items: stretch; }
+ .filterDropdown, .searchBox { width: 100%; box-sizing: border-box; }
+ .tableContainer { overflow: visible; border: 0; background: transparent; box-shadow: none; }
+ .table, .table tbody { display: block; width: 100%; }
+ .table thead { display: none; }
+ .table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 14px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 14px; background: white; }
+ .table td { display: block; min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; font-size: 14px; }
+ .table td::before { content: attr(data-label); display: block; color: #94a3b8; font-size: 11px; margin-bottom: 5px; }
+ .table td:nth-child(3) { grid-column: 1 / -1; }
+ .table td:last-child { grid-column: 1 / -1; }
+ .table td[colspan] { grid-column: 1 / -1; }
+ .table .reviewBtn { width: 100%; }
+}
+
+/* Match the admin submission panel, heading and status badges. */
+.mainContent { background:#f8f7f4; }
+.contentCard { background:#fff; border-radius:16px; padding:28px; min-width:0; }
+.pageTitle { font-size:30px; color:#111; }
+.summary { color:#888; font-size:13px; margin:12px 0 0; }
+.tableContainer { box-shadow:none; border-radius:12px; }
+.table th { background:#eef0f4; padding:20px 18px; }
+.table td { padding:20px 18px; }
+.assignedBadge, .reviewedBadge { display:inline-block; padding:7px 12px; border-radius:24px; font-size:12px; font-weight:700; white-space:nowrap; }
+.assignedBadge { background:#fff3cd; color:#916400; }
+.reviewedBadge { background:#e5f5e9; color:#268247; }
+.footer { padding:28px 12px; text-align:center; font-size:12px; color:#aaa; }
+@media(max-width:1024px) { .contentCard { padding:20px; } }
+@media(max-width:650px) { .contentCard { padding:16px; } .pageTitle { font-size:26px; } .table td { padding:0; } .table td:nth-child(5) { grid-column:2; } .table td:last-child { grid-column:1 / -1; } .tableContainer { border-radius:0; } }

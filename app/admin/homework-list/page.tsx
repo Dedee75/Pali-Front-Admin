@@ -6,45 +6,35 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { confirmAction } from '../../../lib/dialog';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './homework-list.module.css';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-
-const ITEMS_PER_PAGE = 50;
-
-type UserRole = 'SUPER_ADMIN' | 'TEACHER';
-
-type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 type LoginUser = {
 	id: number;
 	name: string;
 	email: string;
-	role: UserRole;
-	isActive: boolean;
+	role: 'SUPER_ADMIN' | 'TEACHER';
 };
 
 type Teacher = {
 	id: number;
 	name: string;
 	email: string;
-	role: UserRole;
-	isActive: boolean;
+	role: 'SUPER_ADMIN' | 'TEACHER';
+	isActive?: boolean;
 };
+
+type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
 
 type HomeworkImage = {
 	id: number;
 	image: string;
 	marks?: number | null;
 	remark?: string | null;
-};
-
-type Student = {
-	id: number;
-	studentCode: string;
-	name: string;
-	batchId: number;
 };
 
 type Reviewer = {
@@ -56,14 +46,23 @@ type Reviewer = {
 type Submission = {
 	id: number;
 	homeworkId: number;
-	studentId: number;
-	reviewerId?: number | null;
+
 	status: SubmissionStatus;
+
 	submittedAt?: string | null;
+
 	totalMarks?: number | null;
-	remark?: string | null;
-	student?: Student | null;
-	images?: HomeworkImage[];
+
+	reviewerId?: number | null;
+
+	student: {
+		id: number;
+		name: string;
+		studentCode: string;
+	};
+
+	images: HomeworkImage[];
+
 	reviewer?: Reviewer | null;
 };
 
@@ -71,51 +70,30 @@ type Homework = {
 	id: number;
 	title: string;
 	description?: string | null;
-	dueDate: string;
-	totalMarks?: number | null;
-	batchId: number;
+	dueDate?: string;
+	totalMarks?: number;
+
 	batch?: {
 		id: number;
 		name: string;
-		teacherId?: number | null;
-		teacher?: Reviewer | null;
-	} | null;
+	};
 };
 
-function getArray<T>(result: unknown): T[] {
-	if (Array.isArray(result)) {
-		return result as T[];
+function getArray<T>(value: unknown): T[] {
+	if (Array.isArray(value)) {
+		return value as T[];
 	}
 
-	if (
-		result &&
-		typeof result === 'object' &&
-		'data' in result &&
-		Array.isArray(
-			(
-				result as {
-					data?: unknown;
-				}
-			).data,
-		)
-	) {
-		return (
-			result as {
-				data: T[];
-			}
-		).data;
+	if (value && typeof value === 'object' && 'data' in value && Array.isArray((value as { data?: unknown }).data)) {
+		return (value as { data: T[] }).data;
 	}
 
 	return [];
 }
 
-function getMessage(result: unknown, fallback: string) {
-	if (result && typeof result === 'object' && 'message' in result) {
-		const message = (
-			result as {
-				message?: unknown;
-			}
-		).message;
+function getMessage(value: unknown, fallback: string) {
+	if (value && typeof value === 'object' && 'message' in value) {
+		const message = (value as { message?: unknown }).message;
 
 		if (Array.isArray(message)) {
 			return message.join(', ');
@@ -129,14 +107,17 @@ function getMessage(result: unknown, fallback: string) {
 	return fallback;
 }
 
-function AdminHomeworkListContent() {
+function HomeworkListContent() {
 	const router = useRouter();
-
 	const searchParams = useSearchParams();
 
-	const homeworkId = Number(searchParams.get('homeworkId') ?? searchParams.get('id'));
+	const homeworkId = Number(searchParams.get('homeworkId'));
 
-	const initialStatus = searchParams.get('status') ?? 'all';
+	/* =========================
+	   STATES
+	   ========================= */
+
+	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 
 	const [homework, setHomework] = useState<Homework | null>(null);
 
@@ -144,31 +125,27 @@ function AdminHomeworkListContent() {
 
 	const [teachers, setTeachers] = useState<Teacher[]>([]);
 
-	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
-
 	const [searchTerm, setSearchTerm] = useState('');
-
-	const [statusFilter, setStatusFilter] = useState(initialStatus);
 
 	const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-	const [selectionCount, setSelectionCount] = useState('100');
-
-	const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
-
-	const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
-
 	const [selectedTeacherId, setSelectedTeacherId] = useState('');
 
-	const [assigning, setAssigning] = useState(false);
+	const [rangeFrom, setRangeFrom] = useState('');
 
-	const [assignError, setAssignError] = useState('');
+	const [rangeTo, setRangeTo] = useState('');
 
 	const [loading, setLoading] = useState(true);
 
+	const [assigning, setAssigning] = useState(false);
+
 	const [error, setError] = useState('');
 
-	const [currentPage, setCurrentPage] = useState(1);
+	const [assignError, setAssignError] = useState('');
+
+	/* =========================
+	   API
+	   ========================= */
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
@@ -182,14 +159,16 @@ function AdminHomeworkListContent() {
 
 			const headers = new Headers(options.headers);
 
-			headers.set('Content-Type', 'application/json');
-
 			headers.set('Authorization', `Bearer ${token}`);
+
+			if (options.body) {
+				headers.set('Content-Type', 'application/json');
+			}
 
 			const response = await fetch(`${API_URL}${endpoint}`, {
 				...options,
 				headers,
-				cache: options.cache ?? 'no-store',
+				cache: 'no-store',
 			});
 
 			const result = await response.json().catch(() => null);
@@ -201,7 +180,7 @@ function AdminHomeworkListContent() {
 
 				router.replace('/');
 
-				throw new Error('Your login session has expired.');
+				throw new Error('Login session expired.');
 			}
 
 			if (response.status === 403) {
@@ -217,13 +196,16 @@ function AdminHomeworkListContent() {
 		[router],
 	);
 
+	/* =========================
+	   LOAD DATA
+	   ========================= */
+
 	const fetchData = useCallback(
 		async (silent = false) => {
 			if (!Number.isInteger(homeworkId) || homeworkId <= 0) {
 				setError('Invalid homework ID.');
 
 				setLoading(false);
-
 				return;
 			}
 
@@ -246,11 +228,11 @@ function AdminHomeworkListContent() {
 
 				const allSubmissions = getArray<Submission>(submissionResult);
 
-				setSubmissions(allSubmissions.filter((submission) => submission.homeworkId === homeworkId));
+				setSubmissions(allSubmissions.filter((item) => item.homeworkId === homeworkId));
 
-				setTeachers(getArray<Teacher>(userResult).filter((user) => user.role === 'TEACHER' && user.isActive));
+				setTeachers(getArray<Teacher>(userResult).filter((user) => user.role === 'TEACHER' && user.isActive !== false));
 			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to load submissions.');
+				setError(err instanceof Error ? err.message : 'Failed to load data.');
 			} finally {
 				if (!silent) {
 					setLoading(false);
@@ -259,6 +241,10 @@ function AdminHomeworkListContent() {
 		},
 		[apiFetch, homeworkId],
 	);
+
+	/* =========================
+	   AUTH
+	   ========================= */
 
 	useEffect(() => {
 		const storedUser = sessionStorage.getItem('user');
@@ -288,159 +274,115 @@ function AdminHomeworkListContent() {
 		}
 	}, [fetchData, router]);
 
-	/*
-	 * Keep statuses current while teachers
-	 * are reviewing homework.
-	 */
-	useEffect(() => {
-		const timer = window.setInterval(() => {
-			if (document.visibilityState === 'visible') {
-				void fetchData(true);
-			}
-		}, 10000);
+	/* =========================
+	   SEARCH
+	   ========================= */
 
-		return () => window.clearInterval(timer);
-	}, [fetchData]);
+	const filteredData = useMemo(() => {
+		const term = searchTerm.trim().toLowerCase();
 
-	const filteredSubmissions = useMemo(() => {
-		const keyword = searchTerm.trim().toLowerCase();
-
-		return submissions.filter((submission) => {
-			const isUnassigned = submission.status === 'SUBMITTED' && !submission.reviewer;
-
-			const matchesStatus =
-				statusFilter === 'all' ? true
-				: statusFilter === 'pending' ? submission.status !== 'REVIEWED'
-				: statusFilter === 'completed' ? submission.status === 'REVIEWED'
-				: statusFilter === 'unassigned' ? isUnassigned
-				: true;
-
-			if (!matchesStatus) {
-				return false;
-			}
-
-			if (!keyword) {
-				return true;
-			}
-
-			const searchText = [
-				submission.student?.name,
-
-				submission.student?.studentCode,
-
-				submission.reviewer?.name,
-
-				submission.status,
-			]
-				.filter(Boolean)
-				.join(' ')
-				.toLowerCase();
-
-			return searchText.includes(keyword);
-		});
-	}, [submissions, searchTerm, statusFilter]);
-
-	/*
-	 * Only submitted and currently
-	 * unassigned students may be selected.
-	 *
-	 * After assigning the first 100,
-	 * they disappear from this list.
-	 * The next Select 100 therefore picks
-	 * the next 100 automatically.
-	 */
-	const assignableSubmissions = useMemo(
-		() => filteredSubmissions.filter((submission) => submission.status === 'SUBMITTED' && !submission.reviewer),
-		[filteredSubmissions],
-	);
-
-	const teacherWorkloads = useMemo(() => {
-		const map = new Map<
-			number,
-			{
-				assigned: number;
-				reviewed: number;
-				waiting: number;
-			}
-		>();
-
-		for (const teacher of teachers) {
-			map.set(teacher.id, {
-				assigned: 0,
-				reviewed: 0,
-				waiting: 0,
-			});
+		if (!term) {
+			return submissions;
 		}
 
-		for (const submission of submissions) {
-			const reviewerId = submission.reviewer?.id;
+		return submissions.filter(
+			(submission) =>
+				submission.student.name.toLowerCase().includes(term) ||
+				submission.student.studentCode.toLowerCase().includes(term) ||
+				submission.reviewer?.name?.toLowerCase().includes(term),
+		);
+	}, [searchTerm, submissions]);
 
-			if (!reviewerId) {
-				continue;
-			}
-
-			const current = map.get(reviewerId);
-
-			if (!current) {
-				continue;
-			}
-
-			current.assigned += 1;
-
-			if (submission.status === 'REVIEWED') {
-				current.reviewed += 1;
-			} else {
-				current.waiting += 1;
-			}
-		}
-
-		return map;
-	}, [submissions, teachers]);
+	/* =========================
+	   SELECT CHECKBOX
+	   ========================= */
 
 	const toggleSelect = (submission: Submission) => {
-		const selectable = submission.status === 'SUBMITTED' && !submission.reviewer;
-
-		if (!selectable) {
+		if (assigning || submission.status === 'PENDING') {
 			return;
 		}
 
 		setSelectedIds((previous) =>
 			previous.includes(submission.id) ? previous.filter((id) => id !== submission.id) : [...previous, submission.id],
 		);
+
+		setAssignError('');
 	};
 
-	const handleSelectByCount = () => {
-		const count = Number(selectionCount);
+	/* =========================
+	   SELECT RANGE
+	   1 -> 2 selects BOTH
+	   ========================= */
 
-		if (!Number.isInteger(count) || count <= 0) {
-			setAssignError('Enter a valid student count.');
+	const handleSelectRange = () => {
+		if (assigning) return;
+		const from = Number(rangeFrom);
+		const to = Number(rangeTo);
+
+		if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < from) {
+			setAssignError('Enter a valid list ID range.');
 
 			return;
 		}
 
-		if (count > assignableSubmissions.length) {
-			setAssignError(`Only ${assignableSubmissions.length} unassigned submitted students are available.`);
-
-			return;
-		}
-
-		const ids = assignableSubmissions.slice(0, count).map((submission) => submission.id);
+		// Match the visible row numbering, including both range endpoints.
+		const ids = filteredData
+			.filter((submission, index) => index + 1 >= from && index + 1 <= to && submission.status !== 'PENDING')
+			.map((submission) => submission.id);
 
 		setSelectedIds(ids);
 
-		setAssignError('');
-
-		setIsSelectModalOpen(false);
+		if (ids.length === 0) {
+			setAssignError(`No selectable rows found from ${from} to ${to}.`);
+		} else {
+			setAssignError('');
+		}
 	};
 
-	const toggleTeacherDropdown = () => {
-		setAssignError('');
+	/* =========================
+	   SELECTED DATA
+	   ========================= */
 
-		setShowTeacherDropdown((current) => !current);
+	const selectedSubmissions = useMemo(
+		() => submissions.filter((submission) => selectedIds.includes(submission.id)),
+		[submissions, selectedIds],
+	);
+
+	const hasAssignedSelected = selectedSubmissions.some((submission) => Boolean(submission.reviewerId || submission.reviewer));
+
+	const hasUnassignedSelected = selectedSubmissions.some((submission) => !submission.reviewerId && !submission.reviewer);
+
+	const mixedSelection = hasAssignedSelected && hasUnassignedSelected;
+
+	const selectedAssignedIds = selectedSubmissions
+		.filter((submission) => Boolean(submission.reviewerId || submission.reviewer))
+		.map((submission) => submission.id);
+
+	const handleUnassign = async (ids: number[]) => {
+		if (assigning || !ids.length) return;
+		setAssigning(true);
+		try {
+			if (!(await confirmAction('update', `teacher assignments for ${ids.length} student(s) — remove assignment`))) return;
+			setAssignError('');
+			await apiFetch('/homework-submissions/unassign-reviewer', {
+				method: 'PATCH',
+				body: JSON.stringify({ submissionIds: ids }),
+			});
+			setSelectedIds((previous) => previous.filter((id) => !ids.includes(id)));
+			await fetchData(true);
+		} catch (err) {
+			setAssignError(err instanceof Error ? err.message : 'Failed to remove assignment.');
+		} finally {
+			setAssigning(false);
+		}
 	};
+
+	/* =========================
+	   ASSIGN
+	   ========================= */
 
 	const handleAssignTeacher = async () => {
-		if (selectedIds.length === 0) {
+		if (!selectedIds.length) {
 			setAssignError('Select students first.');
 
 			return;
@@ -452,11 +394,31 @@ function AdminHomeworkListContent() {
 			return;
 		}
 
-		setAssigning(true);
+		if (mixedSelection) {
+			setAssignError('Select either assigned students or unassigned students.');
 
+			return;
+		}
+
+		setAssigning(true);
 		setAssignError('');
 
 		try {
+			/*
+			 * For already assigned students:
+			 * unassign first, then assign
+			 * selected teacher.
+			 */
+			if (hasAssignedSelected) {
+				await apiFetch('/homework-submissions/unassign-reviewer', {
+					method: 'PATCH',
+
+					body: JSON.stringify({
+						submissionIds: selectedIds,
+					}),
+				});
+			}
+
 			await apiFetch('/homework-submissions/assign-reviewer', {
 				method: 'PATCH',
 
@@ -468,12 +430,11 @@ function AdminHomeworkListContent() {
 			});
 
 			setSelectedIds([]);
-
 			setSelectedTeacherId('');
+			setRangeFrom('');
+			setRangeTo('');
 
-			setShowTeacherDropdown(false);
-
-			await fetchData();
+			await fetchData(true);
 		} catch (err) {
 			setAssignError(err instanceof Error ? err.message : 'Teacher assignment failed.');
 		} finally {
@@ -481,17 +442,21 @@ function AdminHomeworkListContent() {
 		}
 	};
 
-	const formatDate = (date?: string | null) => {
-		if (!date) {
+	/* =========================
+	   DATE
+	   ========================= */
+
+	const formatDate = (value?: string | null) => {
+		if (!value) {
 			return {
 				date: '-',
 				time: '-',
 			};
 		}
 
-		const value = new Date(date);
+		const date = new Date(value);
 
-		if (Number.isNaN(value.getTime())) {
+		if (Number.isNaN(date.getTime())) {
 			return {
 				date: '-',
 				time: '-',
@@ -499,17 +464,20 @@ function AdminHomeworkListContent() {
 		}
 
 		return {
-			date: value.toLocaleDateString(),
+			date: date.toLocaleDateString(),
 
-			time: value.toLocaleTimeString([], {
+			time: date.toLocaleTimeString([], {
 				hour: '2-digit',
-
 				minute: '2-digit',
 			}),
 		};
 	};
 
-	const getStatusLabel = (submission: Submission) => {
+	/* =========================
+	   STATUS
+	   ========================= */
+
+	const getStatus = (submission: Submission) => {
 		if (submission.status === 'REVIEWED') {
 			return 'Reviewed';
 		}
@@ -518,58 +486,49 @@ function AdminHomeworkListContent() {
 			return 'Not Submitted';
 		}
 
-		if (submission.reviewer) {
+		if (submission.reviewerId || submission.reviewer) {
 			return 'Assigned';
 		}
 
-		return 'Ready to Assign';
+		return 'Ready';
 	};
 
-	const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE));
+	/* =========================
+	   COUNTS
+	   ========================= */
 
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [searchTerm, statusFilter]);
+	const readyCount = submissions.filter((item) => item.status === 'SUBMITTED' && !item.reviewerId && !item.reviewer).length;
 
-	useEffect(() => {
-		if (currentPage > totalPages) {
-			setCurrentPage(totalPages);
-		}
-	}, [currentPage, totalPages]);
+	const reviewedCount = submissions.filter((item) => item.status === 'REVIEWED').length;
 
-	const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-
-	const paginatedSubmissions = filteredSubmissions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-	const handleBackToHomepage = () => {
-		router.push('/admin/homeworks');
-	};
-
-	const DEFAULT_AVATAR =
-		'data:image/svg+xml;charset=UTF-8,' +
-		encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
-      <rect width="160" height="160" fill="#f3f4f6"/>
-      <circle cx="80" cy="60" r="30" fill="#c9a227"/>
-      <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
-    </svg>
-  `);
+	/* =========================
+	   LOGOUT
+	   ========================= */
 
 	const handleLogout = () => {
 		sessionStorage.removeItem('accessToken');
 
 		sessionStorage.removeItem('user');
 
-		setCurrentUser(null);
-
 		router.replace('/');
 	};
+
+	const DEFAULT_AVATAR =
+		'data:image/svg+xml;charset=UTF-8,' +
+		encodeURIComponent(`
+			<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+				<rect width="160" height="160" fill="#f3f4f6"/>
+				<circle cx="80" cy="60" r="30" fill="#c9a227"/>
+				<path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
+			</svg>
+		`);
 
 	return (
 		<div className={styles.container}>
 			<header className={styles.navbar}>
 				<div className={styles.navLeft}>
 					<MobileNavigation />
+
 					<div className={styles.logoIcon}>A</div>
 
 					<span className={styles.brandName}>Dhamma Admin</span>
@@ -577,9 +536,10 @@ function AdminHomeworkListContent() {
 
 				<div className={styles.navRight}>
 					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
+
 					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
 
-					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout' aria-label='Logout'>
+					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout'>
 						<svg
 							width='20'
 							height='20'
@@ -590,7 +550,9 @@ function AdminHomeworkListContent() {
 							strokeLinecap='round'
 							strokeLinejoin='round'>
 							<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
+
 							<polyline points='16 17 21 12 16 7' />
+
 							<line x1='21' y1='12' x2='9' y2='12' />
 						</svg>
 					</button>
@@ -598,602 +560,451 @@ function AdminHomeworkListContent() {
 			</header>
 
 			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/admin')}>
-						Users
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/batches')}>
-						Batches
-					</button>
-
-					<button
-						type='button'
-						className={`${styles.sideBtn} ${styles.activeBtn}`}
-						onClick={() => router.push('/admin/homeworks')}>
-						Homework
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/students')}>
-						Students
-					</button>
-				</aside>
+				<Sidebar />
 
 				<main className={styles.mainContent}>
+					{/* BACK */}
+
 					<div className={styles.backBtnContainer}>
-						<button
-							type='button'
-							onClick={handleBackToHomepage}
-							title='Back to Homepage'
-							aria-label='Back to Homepage'
-							style={{
-								minHeight: '36px',
-								padding: '0 14px',
-								border: '1px solid #d59a00',
-								borderRadius: '6px',
-								background: '#ffffff',
-								color: '#a86f00',
-								fontWeight: 600,
-								cursor: 'pointer',
-								whiteSpace: 'nowrap',
-							}}>
+						<button type='button' className={styles.backBtn} onClick={() => router.push('/admin/homeworks')}>
+							<span>←</span>
 							Back to Homework
 						</button>
 					</div>
 
-					<div className={styles.blueBorderContainer}>
+					<div className={styles.contentCard}>
+						{/* HEADER */}
+
 						<div className={styles.contentHeader}>
-							<div>
+							{/* LEFT */}
+
+							<div className={styles.homeworkInfo}>
 								<h1 className={styles.pageTitle}>{homework?.batch?.name ?? 'Batch'}</h1>
 
 								<p className={styles.pageSubtitle}>{homework?.title ?? 'Homework'}</p>
 
-								<p
-									style={{
-										marginTop: '6px',
-
-										color: '#666',
-
-										fontSize: '13px',
-									}}>
+								<p className={styles.summary}>
 									Total: {submissions.length}
 									{' • '}
-									Unassigned submitted:{' '}
-									{submissions.filter((item) => item.status === 'SUBMITTED' && !item.reviewer).length}
+									Ready: {readyCount}
 									{' • '}
-									Reviewed: {submissions.filter((item) => item.status === 'REVIEWED').length}
+									Reviewed: {reviewedCount}
 								</p>
 							</div>
 
+							{/* RIGHT */}
+
 							<div className={styles.headerActions}>
-								<button
-									type='button'
-									className={styles.btnSelect}
-									disabled={assignableSubmissions.length === 0}
-									onClick={() => {
-										setSelectionCount(String(Math.min(100, assignableSubmissions.length)));
-
-										setAssignError('');
-
-										setShowTeacherDropdown(false);
-
-										setSelectedTeacherId('');
-
-										setIsSelectModalOpen(true);
-									}}>
-									Select Students
-									{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
-								</button>
-
-								<div
-									style={{
-										position: 'relative',
-									}}>
-									<button type='button' className={styles.btnAssign} onClick={toggleTeacherDropdown}>
-										Assign Teacher
-										{showTeacherDropdown ? ' ▲' : ' ▼'}
-									</button>
-
-									{showTeacherDropdown && (
-										<div
-											style={{
-												position: 'absolute',
-
-												top: 'calc(100% + 8px)',
-
-												right: 0,
-
-												width: '320px',
-
-												zIndex: 1000,
-
-												background: '#ffffff',
-
-												border: '1px solid #e5e7eb',
-
-												borderRadius: '10px',
-
-												boxShadow: '0 10px 30px rgba(0,0,0,0.14)',
-
-												padding: '14px',
-											}}>
-											<div
-												style={{
-													fontWeight: 700,
-
-													marginBottom: '10px',
-
-													color: '#333',
-												}}>
-												Assign {selectedIds.length} students
-											</div>
-
-											{assignError && (
-												<div
-													style={{
-														color: '#dc2626',
-
-														background: '#fef2f2',
-
-														padding: '8px 10px',
-
-														borderRadius: '6px',
-
-														marginBottom: '10px',
-
-														fontSize: '12px',
-													}}>
-													{assignError}
-												</div>
-											)}
-
-											<select
-												value={selectedTeacherId}
-												onChange={(event) => setSelectedTeacherId(event.target.value)}
-												style={{
-													width: '100%',
-
-													minHeight: '42px',
-
-													padding: '0 10px',
-
-													border: '1px solid #d1d5db',
-
-													borderRadius: '7px',
-
-													background: '#fff',
-
-													marginBottom: '10px',
-												}}>
-												<option value=''>Select teacher</option>
-
-												{teachers.map((teacher) => {
-													const workload = teacherWorkloads.get(teacher.id);
-
-													return (
-														<option key={teacher.id} value={teacher.id}>
-															{teacher.name}
-															{' — '}
-															Waiting: {workload?.waiting ?? 0}
-															{' / '}
-															Reviewed: {workload?.reviewed ?? 0}
-														</option>
-													);
-												})}
-											</select>
-
-											{teachers.length === 0 && (
-												<div
-													style={{
-														color: '#777',
-
-														fontSize: '13px',
-
-														padding: '6px 0 10px',
-													}}>
-													No active teachers found.
-												</div>
-											)}
-
-											<div
-												style={{
-													display: 'flex',
-
-													justifyContent: 'flex-end',
-
-													gap: '8px',
-												}}>
-												<button
-													type='button'
-													onClick={() => {
-														setShowTeacherDropdown(false);
-
-														setSelectedTeacherId('');
-
-														setAssignError('');
-													}}
-													style={{
-														padding: '8px 12px',
-
-														border: '1px solid #d1d5db',
-
-														borderRadius: '6px',
-
-														background: '#fff',
-
-														cursor: 'pointer',
-													}}>
-													Cancel
-												</button>
-
-												<button
-													type='button'
-													disabled={assigning || !selectedTeacherId || selectedIds.length === 0}
-													onClick={() => void handleAssignTeacher()}
-													style={{
-														padding: '8px 14px',
-
-														border: 'none',
-
-														borderRadius: '6px',
-
-														background:
-															assigning || !selectedTeacherId || selectedIds.length === 0 ?
-																'#d1d5db'
-															:	'#cc8c00',
-
-														color: '#fff',
-
-														cursor:
-															assigning || !selectedTeacherId || selectedIds.length === 0 ?
-																'not-allowed'
-															:	'pointer',
-
-														fontWeight: 700,
-													}}>
-													{assigning ? 'Assigning...' : 'Assign'}
-												</button>
-											</div>
-										</div>
-									)}
-								</div>
-
-								<select
-									value={statusFilter}
-									onChange={(event) => setStatusFilter(event.target.value)}
-									style={{
-										minHeight: 44,
-
-										padding: '0 12px',
-
-										border: '1px solid #ddd',
-
-										borderRadius: 8,
-
-										background: '#fff',
-									}}>
-									<option value='all'>All Students</option>
-
-									<option value='unassigned'>Ready to Assign</option>
-
-									<option value='pending'>Pending / Submitted</option>
-
-									<option value='completed'>Reviewed</option>
-								</select>
+								{/* SEARCH */}
 
 								<div className={styles.searchBox}>
 									<input
 										type='text'
-										placeholder='Search name or ID'
+										placeholder='Search Name or ID...'
 										value={searchTerm}
 										onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
 									/>
 								</div>
+
+								{/* TEACHER */}
+
+								<select
+									className={styles.teacherSelect}
+									value={selectedTeacherId}
+									onChange={(event) => setSelectedTeacherId(event.target.value)}
+									disabled={assigning}>
+									<option value=''>Select Teacher</option>
+
+									{teachers.map((teacher) => (
+										<option key={teacher.id} value={teacher.id}>
+											{teacher.name}
+										</option>
+									))}
+								</select>
+
+								<button
+									type='button'
+									className={styles.unassignBtn}
+									disabled={assigning || !selectedAssignedIds.length}
+									onClick={() => void handleUnassign(selectedAssignedIds)}>
+									Remove Assign ({selectedAssignedIds.length})
+								</button>
+								{/* ASSIGN / REASSIGN */}
+
+								<button
+									type='button'
+									className={`${styles.assignBtn} ${hasAssignedSelected ? styles.reassignBtn : ''}`}
+									disabled={assigning || !selectedTeacherId || !selectedIds.length || mixedSelection}
+									onClick={() => void handleAssignTeacher()}>
+									{assigning ?
+										'Saving...'
+									: hasAssignedSelected ?
+										`Reassign (${selectedIds.length})`
+									:	`Assign (${selectedIds.length})`}
+								</button>
 							</div>
 						</div>
 
-						{error && (
-							<div
-								style={{
-									color: '#dc2626',
+						{(error || assignError) && <div className={styles.errorMessage}>{error || assignError}</div>}
 
-									background: '#fef2f2',
+						{/* =========================
+						    DESKTOP / TABLET TABLE
+						========================= */}
 
-									padding: '10px 12px',
-
-									borderRadius: '6px',
-
-									marginBottom: '14px',
-								}}>
-								{error}
+						<div className={styles.desktopHomeworkTable}>
+							<div className={styles.tableContainer}>
+								<table className={styles.table}>
+									<thead>
+										<tr>
+											{/* RANGE */}
+	
+											<th className={styles.rangeColumn}>
+												<div className={styles.idRange}>
+													<div className={styles.rangeInputs}>
+														<label className={styles.rangeItem}>
+															<span>From</span>
+	
+															<input
+																type='number'
+																min='1'
+																placeholder='1'
+																value={rangeFrom}
+																onChange={(event) => setRangeFrom(event.target.value)}
+															/>
+														</label>
+	
+														<label className={styles.rangeItem}>
+															<span>To</span>
+	
+															<input
+																type='number'
+																min='1'
+																placeholder='2'
+																value={rangeTo}
+																onChange={(event) => setRangeTo(event.target.value)}
+															/>
+														</label>
+													</div>
+	
+													<button
+														type='button'
+														className={styles.rangeSelectBtn}
+														onClick={handleSelectRange}
+														disabled={assigning}>
+														Select
+													</button>
+												</div>
+											</th>
+	
+											<th>ID</th>
+	
+											<th>Date Time</th>
+	
+											<th>Student Name / ID</th>
+	
+											<th>Pages</th>
+	
+											<th>Teacher</th>
+	
+											<th>Status</th>
+	
+											<th>Action</th>
+										</tr>
+									</thead>
+	
+									<tbody>
+										{loading && (
+											<tr>
+												<td colSpan={8} className={styles.emptyCell}>
+													Loading submissions...
+												</td>
+											</tr>
+										)}
+	
+										{!loading &&
+											filteredData.map((submission, index) => {
+												const date = formatDate(submission.submittedAt);
+	
+												const selected = selectedIds.includes(submission.id);
+	
+												const selectable = submission.status !== 'PENDING';
+	
+												return (
+													<tr
+														key={submission.id}
+														className={
+															selected ? styles.selectedRow
+															: submission.reviewer ?
+																styles.assignedRow
+															:	''
+														}>
+														{/* CHECKBOX */}
+	
+														<td>
+															<input
+																type='checkbox'
+																className={styles.checkbox}
+																checked={selected}
+																disabled={!selectable || assigning}
+																onChange={() => toggleSelect(submission)}
+															/>
+														</td>
+	
+														{/* STUDENT ID */}
+	
+														<td className={styles.boldText}>{String(index + 1).padStart(2, '0')}</td>
+	
+														{/* DATE */}
+	
+														<td>
+															<div className={styles.boldText}>{date.date}</div>
+	
+															<div className={styles.subText}>{date.time}</div>
+														</td>
+	
+														{/* STUDENT */}
+	
+														<td>
+															<div className={styles.boldText}>{submission.student?.name ?? '-'}</div>
+	
+															<div className={styles.subText}>
+																{submission.student?.studentCode ?? '-'}
+															</div>
+														</td>
+	
+														{/* PAGES */}
+	
+														<td>{submission.images?.length ?? 0}</td>
+	
+														{/* TEACHER */}
+	
+														<td className={styles.boldText}>{submission.reviewer?.name ?? '-'}</td>
+	
+														{/* STATUS */}
+	
+														<td>
+															<span
+																className={
+																	submission.status === 'REVIEWED' ? styles.reviewedStatus
+																	: submission.reviewer ?
+																		styles.assignedStatus
+																	:	styles.readyStatus
+																}>
+																{getStatus(submission)}
+															</span>
+														</td>
+	
+														{/* ACTION */}
+	
+														<td>
+															<div className={styles.actionButtons}>
+																<button
+																	type='button'
+																	className={styles.reviewBtn}
+																	disabled={submission.status === 'PENDING'}
+																	onClick={() =>
+																		router.push(
+																			`/admin/homework-details?submissionId=${submission.id}`,
+																		)
+																	}>
+																	Review
+																</button>
+	
+																{Boolean(submission.reviewerId || submission.reviewer) && (
+																	<button
+																		type='button'
+																		className={styles.unassignBtn2}
+																		disabled={assigning}
+																		aria-label={`Remove assignment for ${
+																			submission.student?.name ?? 'student'
+																		}`}
+																		onClick={() => void handleUnassign([submission.id])}>
+																		Remove Assign
+																	</button>
+																)}
+															</div>
+														</td>
+													</tr>
+												);
+											})}
+	
+										{!loading && filteredData.length === 0 && (
+											<tr>
+												<td colSpan={8} className={styles.emptyCell}>
+													No students found.
+												</td>
+											</tr>
+										)}
+									</tbody>
+								</table>
 							</div>
-						)}
-
-						<div className={styles.tableContainer}>
-							<table className={styles.table}>
-								<thead>
-									<tr>
-										<th
-											style={{
-												width: '40px',
-											}}
-										/>
-
-										<th>ID</th>
-
-										<th>Date Time</th>
-
-										<th>Student Name / ID</th>
-
-										<th>Pages</th>
-
-										<th>Teacher</th>
-
-										<th>Status</th>
-									</tr>
-								</thead>
-
-								<tbody>
-									{loading && (
-										<tr>
-											<td
-												colSpan={7}
-												style={{
-													textAlign: 'center',
-
-													padding: '30px',
-												}}>
-												Loading submissions...
-											</td>
-										</tr>
-									)}
-
-									{!loading &&
-										paginatedSubmissions.map((submission, index) => {
-											const date = formatDate(submission.submittedAt);
-
-											const selectable = submission.status === 'SUBMITTED' && !submission.reviewer;
-
-											return (
-												<tr
-													key={submission.id}
-													className={
-														selectedIds.includes(submission.id) ? styles.selectedRow
-														: selectable ?
-															styles.rowHighlight
-														:	''
-													}
-													onClick={() => {
-														if (selectable) {
-															toggleSelect(submission);
-														}
-													}}
-													style={{
-														cursor: selectable ? 'pointer' : 'default',
-													}}>
-													<td>
-														<input
-															type='checkbox'
-															disabled={!selectable}
-															checked={selectedIds.includes(submission.id)}
-															onClick={(event) => event.stopPropagation()}
-															onChange={() => toggleSelect(submission)}
-														/>
-													</td>
-
-													<td className={styles.boldText}>
-														{String(startIndex + index + 1).padStart(2, '0')}
-													</td>
-
-													<td>
-														<div className={styles.boldText}>{date.date}</div>
-
-														<div className={styles.subText}>{date.time}</div>
-													</td>
-
-													<td>
-														<div className={styles.boldText}>{submission.student?.name ?? '-'}</div>
-
-														<div className={styles.subText}>
-															{submission.student?.studentCode ?? '-'}
-														</div>
-													</td>
-
-													<td>{submission.images?.length ?? 0}</td>
-
-													<td className={styles.boldText}>{submission.reviewer?.name ?? '-'}</td>
-
-													<td>{getStatusLabel(submission)}</td>
-												</tr>
-											);
-										})}
-
-									{!loading && paginatedSubmissions.length === 0 && (
-										<tr>
-											<td
-												colSpan={7}
-												style={{
-													textAlign: 'center',
-
-													padding: '30px',
-												}}>
-												No submissions found.
-											</td>
-										</tr>
-									)}
-								</tbody>
-							</table>
 						</div>
 
-						{!loading && filteredSubmissions.length > ITEMS_PER_PAGE && (
-							<div
-								style={{
-									display: 'flex',
+						{/* =========================
+						    MOBILE HOMEWORK LIST
+						========================= */}
 
-									justifyContent: 'space-between',
+						<div className={styles.mobileHomeworkList}>
+							<div className={styles.mobileRangeCard}>
+								<div className={styles.mobileRangeHeader}>
+									<h3>Quick Range Selector</h3>
 
-									alignItems: 'center',
-
-									padding: '14px 4px',
-								}}>
-								<span
-									style={{
-										color: '#666',
-									}}>
-									Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredSubmissions.length)}{' '}
-									of {filteredSubmissions.length}
-								</span>
-
-								<div
-									style={{
-										display: 'flex',
-
-										gap: '8px',
-									}}>
 									<button
 										type='button'
-										disabled={currentPage === 1}
-										onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
-										Previous
+										className={styles.mobileSelectAll}
+										onClick={() => {
+											const ids = filteredData
+												.filter((item) => item.status !== 'PENDING')
+												.map((item) => item.id);
+
+											setSelectedIds(ids);
+											setAssignError('');
+										}}>
+										Select All
 									</button>
+								</div>
 
-									<span>
-										Page {currentPage} / {totalPages}
-									</span>
+								<div className={styles.mobileRangeControls}>
+									<label>
+										<span>From</span>
+										<input
+											type='number'
+											min='1'
+											placeholder='1'
+											value={rangeFrom}
+											onChange={(event) => setRangeFrom(event.target.value)}
+										/>
+									</label>
+
+									<label>
+										<span>To</span>
+										<input
+											type='number'
+											min='1'
+											placeholder='2'
+											value={rangeTo}
+											onChange={(event) => setRangeTo(event.target.value)}
+										/>
+									</label>
 
 									<button
 										type='button'
-										disabled={currentPage === totalPages}
-										onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
-										Next
+										className={styles.mobileApplyRange}
+										onClick={handleSelectRange}
+										disabled={assigning}>
+										Apply Range
 									</button>
 								</div>
 							</div>
-						)}
+
+							{loading && <div className={styles.mobileEmpty}>Loading submissions...</div>}
+
+							{!loading &&
+								filteredData.map((submission, index) => {
+									const date = formatDate(submission.submittedAt);
+									const statusText = getStatus(submission);
+									const selectable = submission.status !== 'PENDING';
+									const selected = selectedIds.includes(submission.id);
+
+									return (
+										<div
+											key={submission.id}
+											className={`${styles.mobileStudentCard} ${
+												selected ? styles.mobileStudentSelected : ''
+											}`}>
+											<div className={styles.mobileCardTop}>
+												<div className={styles.mobileIdArea}>
+													<input
+														type='checkbox'
+														className={styles.mobileCheckbox}
+														checked={selected}
+														disabled={!selectable || assigning}
+														onChange={() => toggleSelect(submission)}
+													/>
+
+													<span className={styles.mobileIdBadge}>
+														ID: {String(index + 1).padStart(2, '0')}
+													</span>
+												</div>
+
+												<span
+													className={`${styles.mobileStatus} ${
+														statusText === 'Reviewed'
+															? styles.mobileStatusReviewed
+															: statusText === 'Assigned'
+																? styles.mobileStatusAssigned
+																: styles.mobileStatusReady
+													}`}>
+													{statusText}
+												</span>
+											</div>
+
+											<div className={styles.mobileStudentMain}>
+												<div className={styles.mobileStudentInfo}>
+													<strong>{submission.student?.name ?? '-'}</strong>
+													<span>{submission.student?.studentCode ?? '-'}</span>
+												</div>
+
+												<div className={styles.mobileDateInfo}>
+													<strong>{date.date}</strong>
+													<span>{date.time}</span>
+												</div>
+											</div>
+
+											<div className={styles.mobileInfoPanel}>
+												<div className={styles.mobileInfoItem}>
+													<span>Pages</span>
+													<strong>{submission.images?.length ?? 0} Pages</strong>
+												</div>
+
+												<div className={styles.mobileInfoItem}>
+													<span>Assigned Teacher</span>
+													<strong>{submission.reviewer?.name ?? '-'}</strong>
+												</div>
+											</div>
+
+											<div className={styles.mobileActions}>
+												<button
+													type='button'
+													className={styles.mobileReviewBtn}
+													disabled={submission.status === 'PENDING'}
+													onClick={() =>
+														router.push(`/admin/homework-details?submissionId=${submission.id}`)
+													}>
+													Review Submission
+												</button>
+
+												{Boolean(submission.reviewerId || submission.reviewer) && (
+													<button
+														type='button'
+														className={styles.mobileRemoveBtn}
+														disabled={assigning}
+														onClick={() => void handleUnassign([submission.id])}>
+														Remove Assign
+													</button>
+												)}
+											</div>
+										</div>
+									);
+								})}
+
+							{!loading && filteredData.length === 0 && (
+								<div className={styles.mobileEmpty}>No students found.</div>
+							)}
+						</div>
 					</div>
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>
 			</div>
-
-			{isSelectModalOpen && (
-				<div
-					onClick={() => setIsSelectModalOpen(false)}
-					style={{
-						position: 'fixed',
-
-						inset: 0,
-
-						zIndex: 1200,
-
-						background: 'rgba(0,0,0,0.55)',
-
-						display: 'flex',
-
-						alignItems: 'center',
-
-						justifyContent: 'center',
-
-						padding: '20px',
-					}}>
-					<div
-						onClick={(event) => event.stopPropagation()}
-						style={{
-							width: '100%',
-
-							maxWidth: '430px',
-
-							background: 'white',
-
-							borderRadius: '12px',
-
-							padding: '24px',
-						}}>
-						<h2>Select Students</h2>
-
-						<p
-							style={{
-								margin: '10px 0 16px',
-
-								color: '#666',
-							}}>
-							Unassigned submitted students available: {assignableSubmissions.length}
-						</p>
-
-						{assignError && (
-							<p
-								style={{
-									color: '#dc2626',
-
-									marginBottom: '12px',
-								}}>
-								{assignError}
-							</p>
-						)}
-
-						<label>Number of students</label>
-
-						<input
-							type='number'
-							min={1}
-							max={assignableSubmissions.length || 1}
-							value={selectionCount}
-							onChange={(event) => setSelectionCount(event.target.value)}
-							style={{
-								width: '100%',
-
-								padding: '11px 12px',
-
-								marginTop: '6px',
-
-								border: '1px solid #ccc',
-
-								borderRadius: '7px',
-							}}
-						/>
-
-						<div
-							style={{
-								display: 'flex',
-
-								justifyContent: 'flex-end',
-
-								gap: '10px',
-
-								marginTop: '20px',
-							}}>
-							<button type='button' onClick={() => setIsSelectModalOpen(false)}>
-								Cancel
-							</button>
-
-							<button
-								type='button'
-								onClick={handleSelectByCount}
-								style={{
-									background: '#d49600',
-
-									color: 'white',
-
-									border: 'none',
-
-									borderRadius: '7px',
-
-									padding: '10px 18px',
-								}}>
-								Select {selectionCount || '0'}
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
 
-export default function AdminHomeworkListPage() {
+export default function HomeworkListPage() {
 	return (
 		<Suspense fallback={<div>Loading...</div>}>
-			<AdminHomeworkListContent />
+			<HomeworkListContent />
 		</Suspense>
 	);
 }

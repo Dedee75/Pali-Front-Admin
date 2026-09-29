@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmAction } from '../../../lib/dialog';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './batches.module.css';
 
@@ -346,27 +347,7 @@ export default function BatchesPage() {
 			</header>
 
 			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/admin')}>
-						Users
-					</button>
-
-					<button
-						type='button'
-						className={`${styles.sideBtn} ${styles.activeBtn}`}
-						onClick={() => router.push('/admin/batches')}
-						aria-current='page'>
-						Batches
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/homeworks')}>
-						Homework
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/students')}>
-						Students
-					</button>
-				</aside>
+				<Sidebar />
 
 				<main className={styles.mainContent}>
 					<div className={styles.contentHeader}>
@@ -429,18 +410,7 @@ export default function BatchesPage() {
 												key={batch.id}
 												className={`${
 													index % 2 === 0 ? styles.rowEven : styles.rowOdd
-												} ${styles.clickableRow}`}
-												onClick={() => handleOpenEdit(batch)}
-												onKeyDown={(event) => {
-													if (event.target !== event.currentTarget) return;
-													if (event.key === 'Enter' || event.key === ' ') {
-														event.preventDefault();
-														handleOpenEdit(batch);
-													}
-												}}
-												tabIndex={0}
-												role='button'
-												aria-label={`Edit ${batch.name}`}>
+												} ${styles.clickableRow}`}>
 												<td className={styles.identityText}>{formatIdentity(batch.id)}</td>
 
 												<td>
@@ -464,20 +434,9 @@ export default function BatchesPage() {
 													<div className={styles.actionButtonsRow}>
 														<button
 															type='button'
-															className={styles.deleteBtn}
-															onClick={(event) => {
-																event.stopPropagation();
-																void handleDelete(batch.id);
-															}}
-															onKeyDown={(event) => event.stopPropagation()}
-															disabled={deletingId === batch.id}
-															title='Delete'
-															aria-label={
-																deletingId === batch.id ?
-																	`Deleting ${batch.name}`
-																:	`Delete ${batch.name}`
-															}
-															aria-busy={deletingId === batch.id}>
+															className={styles.editAction}
+															aria-label={`Edit ${batch.name}`}
+															onClick={() => handleOpenEdit(batch)}>
 															<svg
 																width='16'
 																height='16'
@@ -485,10 +444,44 @@ export default function BatchesPage() {
 																fill='none'
 																stroke='currentColor'
 																strokeWidth='2'
+																strokeLinecap='round'
+																strokeLinejoin='round'
+																aria-hidden='true'>
+																<path d='M12 20h9' />
+																<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z' />
+															</svg>
+
+															<span>Edit</span>
+														</button>
+
+														<button
+															type='button'
+															className={styles.deleteAction}
+															onClick={(event) => {
+																event.stopPropagation();
+																void handleDelete(batch.id);
+															}}
+															disabled={deletingId === batch.id}
+															aria-label={
+																deletingId === batch.id ?
+																	`Deleting ${batch.name}`
+																:	`Delete ${batch.name}`
+															}>
+															<svg
+																width='16'
+																height='16'
+																viewBox='0 0 24 24'
+																fill='none'
+																stroke='currentColor'
+																strokeWidth='2'
+																strokeLinecap='round'
+																strokeLinejoin='round'
 																aria-hidden='true'>
 																<polyline points='3 6 5 6 21 6' />
 																<path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' />
 															</svg>
+
+															<span>{deletingId === batch.id ? 'Deleting...' : 'Delete'}</span>
 														</button>
 													</div>
 												</td>

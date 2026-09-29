@@ -5,6 +5,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './homework-list.module.css';
 
@@ -240,18 +241,7 @@ function HomeworkListContent() {
 			</header>
 
 			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button
-						type='button'
-						className={`${styles.sideBtn} ${styles.activeBtn}`}
-						onClick={() => router.push('/teacher/teacher-dashboard')}>
-						Homework
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/teacher/student')}>
-						Students
-					</button>
-				</aside>
+				<Sidebar />
 
 				<main className={styles.mainContent}>
 					<div className={styles.backBtnContainer}>
@@ -260,14 +250,16 @@ function HomeworkListContent() {
 							className={styles.backBtn}
 							onClick={() => router.push('/teacher/teacher-dashboard')}>
 							<span aria-hidden='true'>←</span>
-							Back to Dashboard
+							Back to Homework
 						</button>
 					</div>
 
+					<div className={styles.contentCard}>
 					<div className={styles.contentHeader}>
 						<div>
 							<h1 className={styles.pageTitle}>{batchName}</h1>
 							<p className={styles.pageSubtitle}>{title}</p>
+<p className={styles.summary}>Showing: {filteredData.length} • {status === 'completed' ? 'Reviewed' : 'Pending'}</p>
 						</div>
 
 						<div className={styles.filters}>
@@ -306,7 +298,7 @@ function HomeworkListContent() {
 									<th>Student Name / ID</th>
 									<th>Pages</th>
 
-									<th />
+									<th>Status</th><th>Action</th>
 								</tr>
 							</thead>
 
@@ -314,7 +306,7 @@ function HomeworkListContent() {
 								{loading && (
 									<tr>
 										<td
-											colSpan={5}
+											colSpan={6}
 											style={{
 												textAlign: 'center',
 												padding: '30px',
@@ -331,31 +323,32 @@ function HomeworkListContent() {
 										return (
 											<tr
 												key={submission.id}
-												className={`${submission.status !== 'REVIEWED' ? styles.rowPending : ''} ${styles.clickableRow}`}
-												onClick={() => openDetails(submission.id)}>
-												<td className={styles.boldText}>{String(index + 1).padStart(2, '0')}</td>
+												className={`${submission.status !== 'REVIEWED' ? styles.rowPending : ''} ${styles.submissionRow}`}
+												>
+												<td data-label="ID" className={styles.boldText}>{String(index + 1).padStart(2, '0')}</td>
 
-												<td>
+												<td data-label="Submitted">
 													<div className={styles.boldText}>{date.date}</div>
 													<div className={styles.subText}>{date.time}</div>
 												</td>
 
-												<td>
+												<td data-label="Student">
 													<div className={styles.boldText}>{submission.student.name}</div>
 													<div className={styles.subText}>{submission.student.studentCode}</div>
 												</td>
 
-												<td>{submission.images?.length ?? 0}</td>
+												<td data-label="Pages">{submission.images?.length ?? 0}</td>
+<td data-label="Status"><span className={submission.status === 'REVIEWED' ? styles.reviewedBadge : styles.assignedBadge}>{submission.status === 'REVIEWED' ? 'Reviewed' : 'Assigned'}</span></td>
 
 												<td>
 													<button
 														type='button'
-														className={styles.actionBtn}
+														className={styles.reviewBtn}
 														onClick={(event) => {
 															event.stopPropagation();
 															openDetails(submission.id);
 														}}>
-														⋮
+														Review
 													</button>
 												</td>
 											</tr>
@@ -365,7 +358,7 @@ function HomeworkListContent() {
 								{!loading && filteredData.length === 0 && (
 									<tr>
 										<td
-											colSpan={5}
+											colSpan={6}
 											style={{
 												textAlign: 'center',
 												padding: '30px',
@@ -378,7 +371,9 @@ function HomeworkListContent() {
 							</tbody>
 						</table>
 					</div>
-				</main>
+				</div>
+<footer className={styles.footer}>O-Technique-Myanmar-2026@</footer>
+</main>
 			</div>
 		</div>
 	);

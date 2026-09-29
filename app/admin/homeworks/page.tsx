@@ -2,15 +2,18 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { confirmAction } from '../../../lib/dialog';
+import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
 import styles from './homework.module.css';
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+const API_URL = (
+	process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
+).replace(/\/$/, '');
 
 type UserRole = 'SUPER_ADMIN' | 'TEACHER';
 
@@ -44,6 +47,9 @@ type HomeworkSubmissionSummary = {
 };
 
 type Homework = {
+	attachment?: string | null;
+	attachmentName?: string | null;
+
 	id: number;
 	title: string;
 	description?: string | null;
@@ -109,70 +115,131 @@ function getArray<T>(result: unknown): T[] {
 
 export default function AdminHomeworkPage() {
 	const router = useRouter();
+	const mainRef = useRef<HTMLElement>(null);
+	const cardsRef = useRef<HTMLDivElement>(null);
+	const restorePosition = useRef<{ main: number; cards: number } | null>(null);
+
 
 	const [homeworks, setHomeworks] = useState<Homework[]>([]);
 
 	const [batches, setBatches] = useState<Batch[]>([]);
 
-	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
+	/* Batch Filter */
+	const [selectedBatchId, setSelectedBatchId] =
+		useState<number | 'all'>('all');
 
-	const [formData, setFormData] = useState<HomeworkForm>(createDefaultForm());
+	const [currentUser, setCurrentUser] =
+		useState<LoginUser | null>(null);
 
-	const [editingId, setEditingId] = useState<number | null>(null);
+	const [formData, setFormData] =
+		useState<HomeworkForm>(createDefaultForm());
 
-	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [attachment, setAttachment] =
+		useState<File | null>(null);
 
-	const [loading, setLoading] = useState(true);
+	const [editingId, setEditingId] =
+		useState<number | null>(null);
 
-	const [saving, setSaving] = useState(false);
+	const [isModalOpen, setIsModalOpen] =
+		useState(false);
 
-	const [deletingId, setDeletingId] = useState<number | null>(null);
+	const [loading, setLoading] =
+		useState(true);
 
-	const [error, setError] = useState('');
+	const [saving, setSaving] =
+		useState(false);
 
-	const [modalError, setModalError] = useState('');
+	const [deletingId, setDeletingId] =
+		useState<number | null>(null);
+
+	const [error, setError] =
+		useState('');
+
+	const [modalError, setModalError] =
+		useState('');
+
+	/* =========================
+	   API
+	   ========================= */
 
 	const apiFetch = useCallback(
-		async (endpoint: string, options: RequestInit = {}) => {
-			const token = sessionStorage.getItem('accessToken');
+		async (
+			endpoint: string,
+			options: RequestInit = {},
+		) => {
+			const token =
+				sessionStorage.getItem('accessToken');
 
 			if (!token) {
 				router.replace('/');
 
-				throw new Error('Please login first.');
+				throw new Error(
+					'Please login first.',
+				);
 			}
 
-			const headers = new Headers(options.headers);
+			const headers =
+				new Headers(options.headers);
 
-			headers.set('Content-Type', 'application/json');
+			if (!(options.body instanceof FormData)) {
+				headers.set(
+					'Content-Type',
+					'application/json',
+				);
+			}
 
-			headers.set('Authorization', `Bearer ${token}`);
+			headers.set(
+				'Authorization',
+				`Bearer ${token}`,
+			);
 
-			const response = await fetch(`${API_URL}${endpoint}`, {
-				...options,
-				headers,
-				cache: options.cache ?? 'no-store',
-			});
+			const response = await fetch(
+				`${API_URL}${endpoint}`,
+				{
+					...options,
+					headers,
+					cache:
+						options.cache ??
+						'no-store',
+				},
+			);
 
-			const result = await response.json().catch(() => null);
+			const result = await response
+				.json()
+				.catch(() => null);
 
 			if (response.status === 401) {
-				sessionStorage.removeItem('accessToken');
+				sessionStorage.removeItem(
+					'accessToken',
+				);
 
-				sessionStorage.removeItem('user');
+				sessionStorage.removeItem(
+					'user',
+				);
 
 				router.replace('/');
 
-				throw new Error('Your login session has expired.');
+				throw new Error(
+					'Your login session has expired.',
+				);
 			}
 
 			if (response.status === 403) {
-				throw new Error('You do not have permission.');
+				throw new Error(
+					'You do not have permission.',
+				);
 			}
 
 			if (!response.ok) {
 				const message =
-					Array.isArray(result?.message) ? result.message.join(', ') : (result?.message ?? 'Request failed.');
+					Array.isArray(
+						result?.message,
+					)
+						? result.message.join(
+								', ',
+							)
+						: (result?.message ??
+							'Request failed.');
 
 				throw new Error(message);
 			}
@@ -181,6 +248,10 @@ export default function AdminHomeworkPage() {
 		},
 		[router],
 	);
+
+	/* =========================
+	   FETCH DATA
+	   ========================= */
 
 	const fetchData = useCallback(
 		async (silent = false) => {
@@ -191,29 +262,62 @@ export default function AdminHomeworkPage() {
 			setError('');
 
 			try {
-				const [homeworkResult, batchResult, submissionResult] = await Promise.all([
+				const [
+					homeworkResult,
+					batchResult,
+					submissionResult,
+				] = await Promise.all([
 					apiFetch('/homeworks'),
-
 					apiFetch('/batches'),
-
-					apiFetch('/homework-submissions'),
+					apiFetch(
+						'/homework-submissions',
+					),
 				]);
 
-				const homeworkList = getArray<Homework>(homeworkResult);
+				const homeworkList =
+					getArray<Homework>(
+						homeworkResult,
+					);
 
-				const submissionList = getArray<HomeworkSubmissionSummary>(submissionResult);
+				const submissionList =
+					getArray<HomeworkSubmissionSummary>(
+						submissionResult,
+					);
 
-				const mergedHomeworks = homeworkList.map((homework) => ({
-					...homework,
+				const mergedHomeworks =
+					homeworkList.map(
+						(homework) => ({
+							...homework,
 
-					submissions: submissionList.filter((submission) => submission.homeworkId === homework.id),
-				}));
+							submissions:
+								submissionList.filter(
+									(
+										submission,
+									) =>
+										submission.homeworkId ===
+										homework.id,
+								),
+						}),
+					);
 
-				setHomeworks(mergedHomeworks);
+				setHomeworks(
+					mergedHomeworks,
+				);
 
-				setBatches(getArray<Batch>(batchResult).filter((batch) => batch.status));
+				setBatches(
+					getArray<Batch>(
+						batchResult,
+					).filter(
+						(batch) =>
+							batch.status,
+					),
+				);
 			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to load homework.');
+				setError(
+					err instanceof Error
+						? err.message
+						: 'Failed to load homework.',
+				);
 			} finally {
 				if (!silent) {
 					setLoading(false);
@@ -224,7 +328,23 @@ export default function AdminHomeworkPage() {
 	);
 
 	useEffect(() => {
-		const storedUser = sessionStorage.getItem('user');
+		if (loading || !restorePosition.current) return;
+		const position = restorePosition.current;
+		const frame = requestAnimationFrame(() => {
+			if (mainRef.current) mainRef.current.scrollTop = position.main;
+			if (cardsRef.current) cardsRef.current.scrollTop = position.cards;
+			restorePosition.current = null;
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [loading]);
+
+	/* =========================
+	   LOGIN CHECK
+	   ========================= */
+
+	useEffect(() => {
+		const storedUser =
+			sessionStorage.getItem('user');
 
 		if (!storedUser) {
 			router.replace('/');
@@ -232,77 +352,189 @@ export default function AdminHomeworkPage() {
 		}
 
 		try {
-			const user = JSON.parse(storedUser) as LoginUser;
+			const user =
+				JSON.parse(
+					storedUser,
+				) as LoginUser;
 
-			if (user.role !== 'SUPER_ADMIN') {
-				router.replace('/teacher/teacher-dashboard');
+			if (
+				user.role !==
+				'SUPER_ADMIN'
+			) {
+				router.replace(
+					'/teacher/teacher-dashboard',
+				);
 
 				return;
 			}
 
 			setCurrentUser(user);
+			try {
+				const key = `adminHomeworkView:${user.id}`;
+				const saved = JSON.parse(sessionStorage.getItem(key) ?? 'null');
+				if (saved && (saved.batch === 'all' || (Number.isInteger(saved.batch) && saved.batch > 0))) {
+					setSelectedBatchId(saved.batch);
+					restorePosition.current = {
+						main: Number.isFinite(saved.main) ? Math.max(0, saved.main) : 0,
+						cards: Number.isFinite(saved.cards) ? Math.max(0, saved.cards) : 0,
+					};
+				}
+				sessionStorage.removeItem(key);
+			} catch { /* A malformed saved view must not affect login. */ }
+
 
 			void fetchData();
 		} catch {
-			sessionStorage.removeItem('accessToken');
+			sessionStorage.removeItem(
+				'accessToken',
+			);
 
-			sessionStorage.removeItem('user');
+			sessionStorage.removeItem(
+				'user',
+			);
 
 			router.replace('/');
 		}
 	}, [fetchData, router]);
 
-	/*
-	 * Auto-refresh status.
-	 *
-	 * When teachers finish reviewing,
-	 * REVIEWED counts update here and
-	 * the pending hover/highlight disappears.
-	 */
+	/* =========================
+	   AUTO REFRESH
+	   ========================= */
+
 	useEffect(() => {
-		const timer = window.setInterval(() => {
-			if (document.visibilityState === 'visible') {
-				void fetchData(true);
-			}
-		}, 10000);
+		const timer =
+			window.setInterval(() => {
+				if (
+					document.visibilityState ===
+					'visible'
+				) {
+					void fetchData(true);
+				}
+			}, 10000);
 
 		const handleFocus = () => {
 			void fetchData(true);
 		};
 
-		window.addEventListener('focus', handleFocus);
+		window.addEventListener(
+			'focus',
+			handleFocus,
+		);
 
 		return () => {
 			window.clearInterval(timer);
 
-			window.removeEventListener('focus', handleFocus);
+			window.removeEventListener(
+				'focus',
+				handleFocus,
+			);
 		};
 	}, [fetchData]);
 
-	const homeworksByBatch = useMemo(
-		() =>
-			batches
+	/* =========================
+	   BATCH FILTER
+	   ========================= */
+
+	const homeworksByBatch =
+		useMemo(() => {
+			return batches
+				.filter((batch) => {
+					if (
+						selectedBatchId ===
+						'all'
+					) {
+						return true;
+					}
+
+					return (
+						batch.id ===
+						selectedBatchId
+					);
+				})
 				.map((batch) => ({
 					batch,
 
-					homeworks: homeworks.filter((homework) => homework.batchId === batch.id),
+					homeworks:
+						homeworks.filter(
+							(homework) =>
+								homework.batchId ===
+								batch.id,
+						),
 				}))
-				.filter((group) => group.homeworks.length > 0),
-		[batches, homeworks],
+				.filter(
+					(group) =>
+						group.homeworks
+							.length > 0,
+				);
+		}, [
+			batches,
+			homeworks,
+			selectedBatchId,
+		]);
+
+	/* =========================
+	   BATCH TAB INFO
+	   ========================= */
+
+	const getBatchTabInfo = (batchId: number) => {
+		const batchHomeworks = homeworks.filter(
+			(homework) => homework.batchId === batchId,
+		);
+
+		return {
+			homeworkCount: batchHomeworks.length,
+			hasPending: batchHomeworks.some((homework) =>
+				(homework.submissions ?? []).some(
+					(submission) => submission.status === 'SUBMITTED',
+				),
+			),
+		};
+	};
+
+	const allHomeworkCount = homeworks.length;
+
+	const hasAnyPending = homeworks.some((homework) =>
+		(homework.submissions ?? []).some(
+			(submission) => submission.status === 'SUBMITTED',
+		),
 	);
 
-	const getCounts = (homework: Homework) => {
-		const submissions = homework.submissions ?? [];
+	/* =========================
+	   COUNTS
+	   ========================= */
 
-		const totalStudents = submissions.length;
+	const getCounts = (
+		homework: Homework,
+	) => {
+		const submissions =
+			homework.submissions ?? [];
 
-		const notSubmitted = submissions.filter((submission) => submission.status === 'PENDING').length;
+		const totalStudents =
+			submissions.length;
 
-		const waitingCheck = submissions.filter((submission) => submission.status === 'SUBMITTED').length;
+		const notSubmitted =
+			submissions.filter(
+				(submission) =>
+					submission.status ===
+					'PENDING',
+			).length;
 
-		const checked = submissions.filter((submission) => submission.status === 'REVIEWED').length;
+		const waitingCheck =
+			submissions.filter(
+				(submission) =>
+					submission.status ===
+					'SUBMITTED',
+			).length;
 
-		const uploaded = waitingCheck + checked;
+		const checked =
+			submissions.filter(
+				(submission) =>
+					submission.status ===
+					'REVIEWED',
+			).length;
+
+		const uploaded =
+			waitingCheck + checked;
 
 		return {
 			totalStudents,
@@ -311,33 +543,70 @@ export default function AdminHomeworkPage() {
 			waitingCheck,
 			checked,
 
-			allUploadedReviewed: uploaded > 0 && waitingCheck === 0,
+			allUploadedReviewed:
+				uploaded > 0 &&
+				waitingCheck === 0,
 		};
 	};
 
-	const formatDate = (date?: string) => {
+	const formatDate = (
+		date?: string,
+	) => {
 		if (!date) {
 			return '-';
 		}
 
-		return new Date(date).toLocaleDateString();
+		return new Date(
+			date,
+		).toLocaleDateString();
 	};
 
-	const openHomeworkList = (homework: Homework, status: 'pending' | 'completed' | 'all') => {
-		const params = new URLSearchParams({
-			homeworkId: String(homework.id),
+	/* =========================
+	   OPEN HOMEWORK
+	   ========================= */
 
-			status,
-		});
+	const openHomeworkList = (
+		homework: Homework,
+		status:
+			| 'pending'
+			| 'completed'
+			| 'all',
+	) => {
+		const params =
+			new URLSearchParams({
+				homeworkId: String(
+					homework.id,
+				),
 
-		router.push(`/admin/homework-list?${params.toString()}`);
+				status,
+			});
+
+		if (currentUser) {
+			try {
+				sessionStorage.setItem(`adminHomeworkView:${currentUser.id}`, JSON.stringify({
+					batch: selectedBatchId,
+					main: mainRef.current?.scrollTop ?? 0,
+					cards: cardsRef.current?.scrollTop ?? 0,
+				}));
+			} catch { /* Navigation still works when browser storage is unavailable. */ }
+		}
+		router.push(
+			`/admin/homework-list?${params.toString()}`,
+		);
 	};
+
+	/* =========================
+	   CREATE
+	   ========================= */
 
 	const handleOpenCreate = () => {
-		const form = createDefaultForm();
+		const form =
+			createDefaultForm();
 
 		if (batches[0]) {
-			form.batchId = String(batches[0].id);
+			form.batchId = String(
+				batches[0].id,
+			);
 		}
 
 		setFormData(form);
@@ -346,23 +615,41 @@ export default function AdminHomeworkPage() {
 
 		setModalError('');
 
+		setAttachment(null);
+
 		setIsModalOpen(true);
 	};
 
-	const handleOpenEdit = (homework: Homework) => {
+	/* =========================
+	   EDIT
+	   ========================= */
+
+	const handleOpenEdit = (
+		homework: Homework,
+	) => {
 		setFormData({
 			title: homework.title,
 
-			description: homework.description ?? '',
+			description:
+				homework.description ??
+				'',
 
-			batchId: String(homework.batchId),
+			batchId: String(
+				homework.batchId,
+			),
 
-			dueDate: homework.dueDate.slice(0, 10),
+			dueDate:
+				homework.dueDate.slice(
+					0,
+					10,
+				),
 		});
 
 		setEditingId(homework.id);
 
 		setModalError('');
+
+		setAttachment(null);
 
 		setIsModalOpen(true);
 	};
@@ -378,11 +665,22 @@ export default function AdminHomeworkPage() {
 
 		setModalError('');
 
-		setFormData(createDefaultForm());
+		setAttachment(null);
+
+		setFormData(
+			createDefaultForm(),
+		);
 	};
 
-	const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-		const { name, value } = event.target;
+	const handleChange = (
+		event: ChangeEvent<
+			| HTMLInputElement
+			| HTMLTextAreaElement
+			| HTMLSelectElement
+		>,
+	) => {
+		const { name, value } =
+			event.target;
 
 		setFormData((previous) => ({
 			...previous,
@@ -390,72 +688,141 @@ export default function AdminHomeworkPage() {
 		}));
 	};
 
-	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+	/* =========================
+	   SAVE
+	   ========================= */
+
+	const handleSubmit = async (
+		event: FormEvent<HTMLFormElement>,
+	) => {
 		event.preventDefault();
 
 		setModalError('');
 
 		if (!formData.batchId) {
-			setModalError('Please select a batch.');
+			setModalError(
+				'Please select a batch.',
+			);
 
 			return;
 		}
 
 		const payload = {
-			title: formData.title.trim(),
+			title:
+				formData.title.trim(),
 
-			description: formData.description.trim(),
+			description:
+				formData.description.trim(),
 
-			batchId: Number(formData.batchId),
+			batchId: Number(
+				formData.batchId,
+			),
 
-			dueDate: new Date(`${formData.dueDate}T23:59:59.000Z`).toISOString(),
+			dueDate: new Date(
+				`${formData.dueDate}T23:59:59.000Z`,
+			).toISOString(),
 		};
 
-		if (editingId !== null && !(await confirmAction('update', 'this homework'))) return;
+		if (
+			editingId !== null &&
+			!(await confirmAction(
+				'update',
+				'this homework',
+			))
+		) {
+			return;
+		}
 
 		setSaving(true);
 
 		try {
+			const requestBody =
+				new FormData();
+
+			Object.entries(
+				payload,
+			).forEach(
+				([key, value]) => {
+					requestBody.append(
+						key,
+						String(value),
+					);
+				},
+			);
+
+			if (attachment) {
+				requestBody.append(
+					'attachment',
+					attachment,
+				);
+			}
+
 			if (editingId === null) {
-				await apiFetch('/homeworks', {
-					method: 'POST',
-
-					body: JSON.stringify(payload),
-				});
+				await apiFetch(
+					'/homeworks',
+					{
+						method: 'POST',
+						body: requestBody,
+					},
+				);
 			} else {
-				await apiFetch(`/homeworks/${editingId}`, {
-					method: 'PATCH',
-
-					body: JSON.stringify(payload),
-				});
+				await apiFetch(
+					`/homeworks/${editingId}`,
+					{
+						method: 'PATCH',
+						body: requestBody,
+					},
+				);
 			}
 
 			setIsModalOpen(false);
 
 			setEditingId(null);
 
-			setFormData(createDefaultForm());
+			setAttachment(null);
+
+			setFormData(
+				createDefaultForm(),
+			);
 
 			await fetchData();
 		} catch (err) {
-			setModalError(err instanceof Error ? err.message : 'Failed to save homework.');
+			setModalError(
+				err instanceof Error
+					? err.message
+					: 'Failed to save homework.',
+			);
 		} finally {
 			setSaving(false);
 		}
 	};
 
+	/* =========================
+	   AVATAR
+	   ========================= */
+
 	const DEFAULT_AVATAR =
 		'data:image/svg+xml;charset=UTF-8,' +
 		encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
-      <rect width="160" height="160" fill="#f3f4f6"/>
-      <circle cx="80" cy="60" r="30" fill="#c9a227"/>
-      <path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
-    </svg>
-  `);
+			<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+				<rect width="160" height="160" fill="#f3f4f6"/>
+				<circle cx="80" cy="60" r="30" fill="#c9a227"/>
+				<path d="M30 145c8-32 27-48 50-48s42 16 50 48" fill="#c9a227"/>
+			</svg>
+		`);
 
-	const handleDelete = async (homework: Homework) => {
-		const confirmed = await confirmAction('delete', 'this homework');
+	/* =========================
+	   DELETE
+	   ========================= */
+
+	const handleDelete = async (
+		homework: Homework,
+	) => {
+		const confirmed =
+			await confirmAction(
+				'delete',
+				'this homework',
+			);
 
 		if (!confirmed) {
 			return;
@@ -466,41 +833,97 @@ export default function AdminHomeworkPage() {
 		setError('');
 
 		try {
-			await apiFetch(`/homeworks/${homework.id}`, {
-				method: 'DELETE',
-			});
+			await apiFetch(
+				`/homeworks/${homework.id}`,
+				{
+					method: 'DELETE',
+				},
+			);
 
-			setHomeworks((previous) => previous.filter((item) => item.id !== homework.id));
+			setHomeworks(
+				(previous) =>
+					previous.filter(
+						(item) =>
+							item.id !==
+							homework.id,
+					),
+			);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to delete homework.');
+			setError(
+				err instanceof Error
+					? err.message
+					: 'Failed to delete homework.',
+			);
 		} finally {
 			setDeletingId(null);
 		}
 	};
 
-	const handleLogout = () => {
-		sessionStorage.removeItem('accessToken');
+	/* =========================
+	   LOGOUT
+	   ========================= */
 
-		sessionStorage.removeItem('user');
+	const handleLogout = () => {
+		sessionStorage.removeItem(
+			'accessToken',
+		);
+
+		sessionStorage.removeItem(
+			'user',
+		);
 
 		router.replace('/');
 	};
 
 	return (
 		<div className={styles.container}>
+			{/* =========================
+			    NAVBAR
+			    ========================= */}
+
 			<header className={styles.navbar}>
 				<div className={styles.navLeft}>
 					<MobileNavigation />
-					<div className={styles.logoIcon}>A</div>
 
-					<span className={styles.brandName}>Dhamma Admin</span>
+					<div className={styles.logoIcon}>
+						A
+					</div>
+
+					<span
+						className={
+							styles.brandName
+						}>
+						Dhamma Admin
+					</span>
 				</div>
 
 				<div className={styles.navRight}>
-					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
-					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
+					<img
+						src={DEFAULT_AVATAR}
+						alt='Profile'
+						className={
+							styles.profileImg
+						}
+					/>
 
-					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout' aria-label='Logout'>
+					<span
+						className={
+							styles.profileName
+						}>
+						{currentUser?.name ??
+							'Super Admin'}
+					</span>
+
+					<button
+						type='button'
+						className={
+							styles.logoutBtn
+						}
+						onClick={
+							handleLogout
+						}
+						title='Logout'
+						aria-label='Logout'>
 						<svg
 							width='20'
 							height='20'
@@ -510,135 +933,252 @@ export default function AdminHomeworkPage() {
 							strokeWidth='2'
 							strokeLinecap='round'
 							strokeLinejoin='round'>
-							<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'></path>
-							<polyline points='16 17 21 12 16 7'></polyline>
-							<line x1='21' y1='12' x2='9' y2='12'></line>
+							<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
+
+							<polyline points='16 17 21 12 16 7' />
+
+							<line
+								x1='21'
+								y1='12'
+								x2='9'
+								y2='12'
+							/>
 						</svg>
 					</button>
 				</div>
 			</header>
 
-			<div className={styles.layoutWrapper}>
-				<aside className={styles.sidebar}>
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/admin')}>
-						Users
-					</button>
+			<div
+				className={
+					styles.layoutWrapper
+				}>
+				<Sidebar />
 
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/batches')}>
-						Batches
-					</button>
+				<main
+					ref={mainRef}
+					className={
+						styles.mainContent
+					}>
+					{/* HEADER */}
 
-					<button
-						type='button'
-						className={`${styles.sideBtn} ${styles.activeBtn}`}
-						onClick={() => router.push('/admin/homeworks')}>
-						Homework
-					</button>
-
-					<button type='button' className={styles.sideBtn} onClick={() => router.push('/admin/students')}>
-						Students
-					</button>
-				</aside>
-
-				<main className={styles.mainContent}>
-					<div className={styles.contentHeader}>
+					<div
+						className={
+							styles.contentHeader
+						}>
 						<div>
-							<h1 className={styles.pageTitle}>Homeworks</h1>
+							<h1
+								className={
+									styles.pageTitle
+								}>
+								Homeworks
+							</h1>
 
-							<p className={styles.pageSubtitle}>Create and manage all registered homework.</p>
+							<p
+								className={
+									styles.pageSubtitle
+								}>
+								Create and manage all
+								registered homework.
+							</p>
 						</div>
 
-						<div className={styles.headerActions}>
-							<div className={styles.filterDropdown}>All Batches and Assignments</div>
-
+						<div
+							className={
+								styles.headerActions
+							}>
 							<button
 								type='button'
-								className={styles.btnAdd}
-								onClick={handleOpenCreate}
-								disabled={loading || batches.length === 0}>
+								className={
+									styles.btnAdd
+								}
+								onClick={
+									handleOpenCreate
+								}
+								disabled={
+									loading ||
+									batches.length ===
+										0
+								}>
 								Add New Homework
 							</button>
 						</div>
 					</div>
 
-					{error && <div className={styles.errorMessage}>{error}</div>}
+					{/* =========================
+					    BATCH FILTER
+					    ========================= */}
 
-					<div className={styles.scrollContainer}>
-						{loading && <p className={styles.loadingText}>Loading homework...</p>}
+					<div className={styles.batchFilterWrapper}>
+						<div className={styles.batchFilterTabs}>
+							<button
+								type='button'
+								className={`${styles.batchFilterBtn} ${
+									selectedBatchId === 'all' ? styles.batchFilterActive : ''
+								}`}
+								onClick={() => setSelectedBatchId('all')}>
+								<span className={styles.batchFilterContent}>
+									<span>All</span>
+									<span className={styles.batchHomeworkCount}>{allHomeworkCount}</span>
+								</span>
+
+								{hasAnyPending && (
+									<span className={styles.batchNotificationDot} aria-label='Homework waiting to be checked' />
+								)}
+							</button>
+
+							{batches.map((batch) => {
+								const batchInfo = getBatchTabInfo(batch.id);
+
+								return (
+									<button
+										key={batch.id}
+										type='button'
+										className={`${styles.batchFilterBtn} ${
+											selectedBatchId === batch.id ? styles.batchFilterActive : ''
+										}`}
+										onClick={() => setSelectedBatchId(batch.id)}>
+										<span className={styles.batchFilterContent}>
+											<span>{batch.name}</span>
+											<span className={styles.batchHomeworkCount}>{batchInfo.homeworkCount}</span>
+										</span>
+
+										{batchInfo.hasPending && (
+											<span className={styles.batchNotificationDot} aria-label='Homework waiting to be checked' />
+										)}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+
+					{/* ERROR */}
+
+					{error && (
+						<div
+							className={
+								styles.errorMessage
+							}>
+							{error}
+						</div>
+					)}
+
+					{/* =========================
+					    HOMEWORK LIST
+					    ========================= */}
+
+					<div
+						ref={cardsRef}
+						className={
+							styles.scrollContainer
+						}>
+						{loading && (
+							<p
+								className={
+									styles.loadingText
+								}>
+								Loading homework...
+							</p>
+						)}
 
 						{!loading &&
-							homeworksByBatch.map(({ batch, homeworks: batchHomeworks }) => (
-								<div key={batch.id} className={styles.batchSection}>
-									<h2 className={styles.batchTitle}>{batch.name}</h2>
+							homeworksByBatch.length ===
+								0 && (
+								<div
+									className={
+										styles.emptyState
+									}>
+									No homework found
+									for this batch.
+								</div>
+							)}
 
-									<div className={styles.cardRowWrapper}>
-										<div className={styles.cardRow}>
-											{batchHomeworks.map((homework) => {
-												const counts = getCounts(homework);
+						{!loading &&
+							homeworksByBatch.map(
+								({
+									batch,
+									homeworks:
+										batchHomeworks,
+								}) => (
+									<div
+										key={
+											batch.id
+										}
+										className={
+											styles.batchSection
+										}>
+										<h2
+											className={
+												styles.batchTitle
+											}>
+											{
+												batch.name
+											}
+										</h2>
 
-												/*
-												 * Active only while at least
-												 * one uploaded homework still
-												 * needs teacher review.
-												 */
-												const isPending = counts.waitingCheck > 0;
+										<div
+											className={
+												styles.cardRowWrapper
+											}>
+											<div
+												className={
+													styles.cardRow
+												}>
+												{batchHomeworks.map(
+													(
+														homework,
+													) => {
+														const counts =
+															getCounts(
+																homework,
+															);
 
-												return (
-													<div
-														key={homework.id}
-														className={`${styles.card} ${
-															isPending ?
-																styles.cardPending
-															:	`${styles.cardCompleted} homeworkNoActiveHover`
-														}`}
-														onClick={() => openHomeworkList(homework, isPending ? 'pending' : 'all')}
-														style={{
-															cursor: 'pointer',
-														}}>
-														<div className={styles.cardActions}>
-															<button
-																type='button'
-																className={styles.editBtn}
-																onClick={(event) => {
-																	event.stopPropagation();
-																	handleOpenEdit(homework);
-																}}
-																title='Edit Homework'
-																aria-label={`Edit ${homework.title}`}>
-																<svg
-																	width='15'
-																	height='15'
-																	viewBox='0 0 24 24'
-																	fill='none'
-																	stroke='currentColor'
-																	strokeWidth='2'
-																	strokeLinecap='round'
-																	strokeLinejoin='round'
-																	aria-hidden='true'>
-																	<path d='M12 20h9' />
-																	<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z' />
-																</svg>
+														const isPending =
+															counts.waitingCheck >
+															0;
 
-																<span>Edit</span>
-															</button>
+														return (
+															<div
+																key={
+																	homework.id
+																}
+																className={`${styles.card} ${
+																	isPending
+																		? styles.cardPending
+																		: `${styles.cardCompleted} homeworkNoActiveHover`
+																}`}
+																onClick={() =>
+																	openHomeworkList(
+																		homework,
+																		isPending
+																			? 'pending'
+																			: 'all',
+																	)
+																}
+																style={{
+																	cursor:
+																		'pointer',
+																}}>
+																{/* ACTIONS */}
 
-															<button
-																type='button'
-																className={styles.deleteBtn}
-																onClick={(event) => {
-																	event.stopPropagation();
-																	void handleDelete(homework);
-																}}
-																disabled={deletingId === homework.id}
-																title='Delete Homework'
-																aria-label={`Delete ${homework.title}`}>
-																{deletingId === homework.id ?
-																	<>
-																		<span className={styles.deleteSpinner} />
+																<div
+																	className={
+																		styles.cardActions
+																	}>
+																	<button
+																		type='button'
+																		className={
+																			styles.editBtn
+																		}
+																		onClick={(
+																			event,
+																		) => {
+																			event.stopPropagation();
 
-																		<span>Deleting</span>
-																	</>
-																:	<>
+																			handleOpenEdit(
+																				homework,
+																			);
+																		}}
+																		title='Edit Homework'>
 																		<svg
 																			width='15'
 																			height='15'
@@ -647,232 +1187,588 @@ export default function AdminHomeworkPage() {
 																			stroke='currentColor'
 																			strokeWidth='2'
 																			strokeLinecap='round'
-																			strokeLinejoin='round'
-																			aria-hidden='true'>
-																			<polyline points='3 6 5 6 21 6' />
-																			<path d='M19 6l-1 14H6L5 6' />
-																			<path d='M10 11v6' />
-																			<path d='M14 11v6' />
-																			<path d='M9 6V4h6v2' />
+																			strokeLinejoin='round'>
+																			<path d='M12 20h9' />
+																			<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z' />
 																		</svg>
 
-																		<span>Delete</span>
-																	</>
-																}
-															</button>
-														</div>
+																		<span>
+																			Edit
+																		</span>
+																	</button>
 
-														<h3 className={styles.cardTitle}>{homework.title}</h3>
+																	<button
+																		type='button'
+																		className={
+																			styles.deleteBtn
+																		}
+																		onClick={(
+																			event,
+																		) => {
+																			event.stopPropagation();
 
-														<div className={styles.cardDetails}>
-															<div className={styles.detailRow}>
-																<span className={styles.detailLabel}>Date</span>
+																			void handleDelete(
+																				homework,
+																			);
+																		}}
+																		disabled={
+																			deletingId ===
+																			homework.id
+																		}
+																		title='Delete Homework'>
+																		{deletingId ===
+																		homework.id ? (
+																			<>
+																				<span
+																					className={
+																						styles.deleteSpinner
+																					}
+																				/>
 
-																<span className={styles.detailValue}>
-																	{formatDate(homework.createdAt)}
-																</span>
-															</div>
+																				<span>
+																					Deleting
+																				</span>
+																			</>
+																		) : (
+																			<>
+																				<svg
+																					width='15'
+																					height='15'
+																					viewBox='0 0 24 24'
+																					fill='none'
+																					stroke='currentColor'
+																					strokeWidth='2'
+																					strokeLinecap='round'
+																					strokeLinejoin='round'>
+																					<polyline points='3 6 5 6 21 6' />
+																					<path d='M19 6l-1 14H6L5 6' />
+																					<path d='M10 11v6' />
+																					<path d='M14 11v6' />
+																					<path d='M9 6V4h6v2' />
+																				</svg>
 
-															<div className={styles.detailRow}>
-																<span className={styles.detailLabel}>Close</span>
+																				<span>
+																					Delete
+																				</span>
+																			</>
+																		)}
+																	</button>
+																</div>
 
-																<span className={styles.detailValue}>
-																	{formatDate(homework.dueDate)}
-																</span>
-															</div>
-
-															<div className={styles.detailRow}>
-																<span className={styles.detailLabel}>Upload</span>
-
-																<span className={styles.countBadge}>{counts.uploaded}</span>
-															</div>
-
-															<div className={styles.detailRow}>
-																<span className={styles.detailLabel}>Waiting Check</span>
-
-																<span
+																<h3
 																	className={
-																		counts.waitingCheck > 0 ?
-																			styles.pendingCount
-																		:	styles.countBadge
+																		styles.cardTitle
 																	}>
-																	{counts.waitingCheck}
-																</span>
+																	{
+																		homework.title
+																	}
+																</h3>
+
+																{/* DETAILS */}
+
+																<div
+																	className={
+																		styles.cardDetails
+																	}>
+																	<div
+																		className={
+																			styles.detailRow
+																		}>
+																		<span
+																			className={
+																				styles.detailLabel
+																			}>
+																			Date
+																		</span>
+
+																		<span
+																			className={
+																				styles.detailValue
+																			}>
+																			{formatDate(
+																				homework.createdAt,
+																			)}
+																		</span>
+																	</div>
+
+																	<div
+																		className={
+																			styles.detailRow
+																		}>
+																		<span
+																			className={
+																				styles.detailLabel
+																			}>
+																			Close
+																		</span>
+
+																		<span
+																			className={
+																				styles.detailValue
+																			}>
+																			{formatDate(
+																				homework.dueDate,
+																			)}
+																		</span>
+																	</div>
+
+																	<div
+																		className={
+																			styles.detailRow
+																		}>
+																		<span
+																			className={
+																				styles.detailLabel
+																			}>
+																			Upload
+																		</span>
+
+																		<span
+																			className={
+																				styles.countBadge
+																			}>
+																			{
+																				counts.uploaded
+																			}
+																		</span>
+																	</div>
+
+																	<div
+																		className={
+																			styles.detailRow
+																		}>
+																		<span
+																			className={
+																				styles.detailLabel
+																			}>
+																			Waiting
+																			Check
+																		</span>
+
+																		<span
+																			className={
+																				counts.waitingCheck >
+																				0
+																					? styles.pendingCount
+																					: styles.countBadge
+																			}>
+																			{
+																				counts.waitingCheck
+																			}
+																		</span>
+																	</div>
+
+																	<div
+																		className={
+																			styles.detailRow
+																		}>
+																		<span
+																			className={
+																				styles.detailLabel
+																			}>
+																			Checked
+																		</span>
+
+																		<span
+																			className={
+																				styles.checkedCount
+																			}>
+																			{
+																				counts.checked
+																			}
+																		</span>
+																	</div>
+																</div>
+
+																{/* BOTTOM */}
+
+																<div
+																	className={
+																		styles.cardBottom
+																	}>
+																	<div
+																		className={
+																			styles.studentCount
+																		}>
+																		<svg
+																			width='16'
+																			height='16'
+																			viewBox='0 0 24 24'
+																			fill='none'
+																			stroke='currentColor'
+																			strokeWidth='2'>
+																			<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
+
+																			<circle
+																				cx='9'
+																				cy='7'
+																				r='4'
+																			/>
+
+																			<path d='M22 21v-2a4 4 0 0 0-3-3.87' />
+																		</svg>
+
+																		<span>
+																			{
+																				counts.totalStudents
+																			}{' '}
+																			Students
+																		</span>
+																	</div>
+
+																	{isPending ? (
+																		<button
+																			type='button'
+																			className={
+																				styles.btnCheck
+																			}
+																			onClick={(
+																				event,
+																			) => {
+																				event.stopPropagation();
+
+																				openHomeworkList(
+																					homework,
+																					'pending',
+																				);
+																			}}>
+																			Check
+																		</button>
+																	) : (
+																		<button
+																			type='button'
+																			className={
+																				styles.btnView
+																			}
+																			onClick={(
+																				event,
+																			) => {
+																				event.stopPropagation();
+
+																				openHomeworkList(
+																					homework,
+																					'all',
+																				);
+																			}}>
+																			View
+																		</button>
+																	)}
+																</div>
 															</div>
-
-															<div className={styles.detailRow}>
-																<span className={styles.detailLabel}>Checked</span>
-
-																<span className={styles.checkedCount}>{counts.checked}</span>
-															</div>
-														</div>
-
-														<div className={styles.cardBottom}>
-															<div className={styles.studentCount}>
-																<svg
-																	width='16'
-																	height='16'
-																	viewBox='0 0 24 24'
-																	fill='none'
-																	stroke='currentColor'
-																	strokeWidth='2'
-																	strokeLinecap='round'
-																	strokeLinejoin='round'
-																	aria-hidden='true'>
-																	<path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-																	<circle cx='9' cy='7' r='4' />
-																	<path d='M22 21v-2a4 4 0 0 0-3-3.87' />
-																	<path d='M16 3.13a4 4 0 0 1 0 7.75' />
-																</svg>
-
-																<span>{counts.totalStudents} Students</span>
-															</div>
-
-															{isPending ?
-																<button
-																	type='button'
-																	className={styles.btnCheck}
-																	onClick={(event) => {
-																		event.stopPropagation();
-																		openHomeworkList(homework, 'pending');
-																	}}>
-																	<svg
-																		width='15'
-																		height='15'
-																		viewBox='0 0 24 24'
-																		fill='none'
-																		stroke='currentColor'
-																		strokeWidth='2'
-																		strokeLinecap='round'
-																		strokeLinejoin='round'
-																		aria-hidden='true'>
-																		<path d='M9 11l3 3L22 4' />
-																		<path d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' />
-																	</svg>
-																	Check
-																</button>
-															:	<button
-																	type='button'
-																	className={styles.btnView}
-																	onClick={() => openHomeworkList(homework, 'all')}>
-																	<svg
-																		width='15'
-																		height='15'
-																		viewBox='0 0 24 24'
-																		fill='none'
-																		stroke='currentColor'
-																		strokeWidth='2'
-																		strokeLinecap='round'
-																		strokeLinejoin='round'
-																		aria-hidden='true'>
-																		<path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z' />
-																		<circle cx='12' cy='12' r='3' />
-																	</svg>
-																	View
-																</button>
-															}
-														</div>
-													</div>
-												);
-											})}
+														);
+													},
+												)}
+											</div>
 										</div>
 									</div>
-								</div>
-							))}
+								),
+							)}
 					</div>
 
-					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
+					<div
+						className={
+							styles.footerBrand
+						}>
+						O-Technique-Myanmar-2026@
+					</div>
 				</main>
 			</div>
 
-			{isModalOpen && (
-				<div className={styles.modalOverlay} onClick={handleCloseModal}>
-					<div className={styles.modalContent} onClick={(event) => event.stopPropagation()}>
-						<div className={styles.modalHeader}>
-							<div>
-								<h2 className={styles.modalTitle}>{editingId ? 'Edit Homework' : 'Add New Homework'}</h2>
+			{/* =========================
+			    CREATE / EDIT MODAL
+			    ========================= */}
 
-								<p className={styles.modalSubtitle}>
-									{editingId ?
-										'Update the homework information below.'
-									:	'Create a new homework assignment for a batch.'}
+			{isModalOpen && (
+				<div
+					className={
+						styles.modalOverlay
+					}
+					onClick={
+						handleCloseModal
+					}>
+					<div
+						className={
+							styles.modalContent
+						}
+						onClick={(event) =>
+							event.stopPropagation()
+						}>
+						<div
+							className={
+								styles.modalHeader
+							}>
+							<div>
+								<h2
+									className={
+										styles.modalTitle
+									}>
+									{editingId
+										? 'Edit Homework'
+										: 'Add New Homework'}
+								</h2>
+
+								<p
+									className={
+										styles.modalSubtitle
+									}>
+									{editingId
+										? 'Update homework information.'
+										: 'Create a new homework assignment.'}
 								</p>
 							</div>
 
 							<button
 								type='button'
-								className={styles.modalCloseBtn}
-								onClick={handleCloseModal}
-								disabled={saving}
-								aria-label='Close'
-								title='Close'>
+								className={
+									styles.modalCloseBtn
+								}
+								onClick={
+									handleCloseModal
+								}
+								disabled={
+									saving
+								}>
 								×
 							</button>
 						</div>
 
-						{modalError && <div className={styles.modalError}>{modalError}</div>}
+						{modalError && (
+							<div
+								className={
+									styles.modalError
+								}>
+								{
+									modalError
+								}
+							</div>
+						)}
 
-						<form className={styles.modalForm} onSubmit={handleSubmit}>
-							<label className={styles.formLabel}>Homework Title</label>
+						<form
+							className={
+								styles.modalForm
+							}
+							onSubmit={
+								handleSubmit
+							}>
+							<label
+								className={
+									styles.formLabel
+								}>
+								Homework Title
+							</label>
 
 							<input
 								type='text'
 								name='title'
 								required
-								value={formData.title}
-								onChange={handleChange}
-								className={styles.formControl}
+								value={
+									formData.title
+								}
+								onChange={
+									handleChange
+								}
+								className={
+									styles.formControl
+								}
 							/>
 
-							<label className={styles.formLabel}>Description</label>
+							<label
+								className={
+									styles.formLabel
+								}>
+								Description
+							</label>
 
 							<textarea
 								name='description'
-								value={formData.description}
-								onChange={handleChange}
+								value={
+									formData.description
+								}
+								onChange={
+									handleChange
+								}
 								rows={4}
-								className={styles.formControl}
+								className={
+									styles.formControl
+								}
 							/>
 
-							<label className={styles.formLabel}>Batch</label>
+							<label
+								className={
+									styles.formLabel
+								}>
+								Attachment
+								(PDF / JPG /
+								PNG / WebP,
+								up to 10 MB)
+							</label>
+
+							<input
+								type='file'
+								className={
+									styles.formControl
+								}
+								accept='.pdf,.jpg,.jpeg,.png,.webp'
+								onChange={(
+									event,
+								) => {
+									const file =
+										event
+											.target
+											.files?.[0] ??
+										null;
+
+									if (
+										file &&
+										file.size >
+											10 *
+												1024 *
+												1024
+									) {
+										setModalError(
+											'Attachment must be at most 10 MB',
+										);
+
+										event.target.value =
+											'';
+
+										setAttachment(
+											null,
+										);
+
+										return;
+									}
+
+									setAttachment(
+										file,
+									);
+
+									setModalError(
+										'',
+									);
+								}}
+							/>
+
+							{editingId &&
+								homeworks.find(
+									(item) =>
+										item.id ===
+										editingId,
+								)?.attachment && (
+									<a
+										className={
+											styles.currentAttachment
+										}
+										target='_blank'
+										rel='noopener noreferrer'
+										href={`${API_URL}${
+											homeworks.find(
+												(
+													item,
+												) =>
+													item.id ===
+													editingId,
+											)
+												?.attachment
+										}`}>
+										View current
+										attachment
+									</a>
+								)}
+
+							<label
+								className={
+									styles.formLabel
+								}>
+								Batch
+							</label>
 
 							<select
 								name='batchId'
 								required
-								value={formData.batchId}
-								onChange={handleChange}
-								className={styles.formControl}>
-								<option value=''>Select batch</option>
+								value={
+									formData.batchId
+								}
+								onChange={
+									handleChange
+								}
+								className={
+									styles.formControl
+								}>
+								<option value=''>
+									Select batch
+								</option>
 
-								{batches.map((batch) => (
-									<option key={batch.id} value={batch.id}>
-										{batch.name}
-									</option>
-								))}
+								{batches.map(
+									(batch) => (
+										<option
+											key={
+												batch.id
+											}
+											value={
+												batch.id
+											}>
+											{
+												batch.name
+											}
+										</option>
+									),
+								)}
 							</select>
 
-							<label className={styles.formLabel}>Due Date</label>
+							<label
+								className={
+									styles.formLabel
+								}>
+								Due Date
+							</label>
 
 							<input
 								type='date'
 								name='dueDate'
 								required
-								value={formData.dueDate}
-								onChange={handleChange}
-								className={styles.formControl}
+								value={
+									formData.dueDate
+								}
+								onChange={
+									handleChange
+								}
+								className={
+									styles.formControl
+								}
 							/>
 
-							<div className={styles.modalActions}>
-								<button type='button' className={styles.cancelBtn} onClick={handleCloseModal} disabled={saving}>
+							<div
+								className={
+									styles.modalActions
+								}>
+								<button
+									type='button'
+									className={
+										styles.cancelBtn
+									}
+									onClick={
+										handleCloseModal
+									}
+									disabled={
+										saving
+									}>
 									Cancel
 								</button>
 
-								<button type='submit' className={styles.saveBtn} disabled={saving}>
-									{saving ?
-										'Saving...'
-									: editingId ?
-										'Update'
-									:	'Create'}
+								<button
+									type='submit'
+									className={
+										styles.saveBtn
+									}
+									disabled={
+										saving
+									}>
+									{saving
+										? 'Saving...'
+										: editingId
+											? 'Update'
+											: 'Create'}
 								</button>
 							</div>
 						</form>
@@ -881,14 +1777,9 @@ export default function AdminHomeworkPage() {
 			)}
 
 			<style jsx global>{`
-				/*
-         * Remove hover/active effect after
-         * all submitted homework is reviewed.
-         */
 				.homeworkNoActiveHover:hover {
 					transform: none !important;
 					box-shadow: none !important;
-					cursor: default !important;
 				}
 			`}</style>
 		</div>
