@@ -1,1386 +1,1226 @@
-/** @format */
-
 .container {
-	height: 100dvh;
-	min-height: 0;
-	display: flex;
-	flex-direction: column;
-	background: #f8f7f4;
-	overflow: hidden;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f8f7f4;
+  overflow: hidden;
 }
 
-/* =========================
-   NAVBAR
-   ========================= */
-
 .navbar {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-
-	padding: 15px 40px;
-
-	background: #fff;
-	border-bottom: 3px solid #f6e6b8;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 40px;
+  background: #fff;
+  border-bottom: 3px solid #f6e6b8;
 }
 
 .navLeft,
 .navRight {
-	display: flex;
-	align-items: center;
-	gap: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .logoIcon {
-	width: 32px;
-	height: 32px;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	border: 2px solid #c48a00;
-	border-radius: 4px;
-
-	color: #c48a00;
-	font-weight: 700;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #c48a00;
+  border-radius: 4px;
+  color: #c48a00;
+  font-weight: 700;
 }
 
 .brandName {
-	color: #c48a00;
-	font-size: 20px;
-	font-weight: 700;
+  color: #c48a00;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .profileImg {
-	width: 36px;
-	height: 36px;
-	border-radius: 50%;
-	object-fit: cover;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .profileName {
-	color: #c48a00;
-	font-weight: 600;
+  color: #c48a00;
+  font-weight: 600;
 }
 
 .logoutBtn {
-	display: flex;
-	align-items: center;
-
-	padding: 4px;
-
-	background: none;
-	border: none;
-
-	cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .logoutBtn:hover {
-	opacity: 0.7;
+  opacity: 0.7;
 }
 
-/* =========================
-   LAYOUT
-   ========================= */
-
 .layoutWrapper {
-	flex: 1;
-	min-width: 0;
-	min-height: 0;
-
-	display: flex;
-
-	overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
 }
 
 .mainContent {
-	flex: 1;
-	min-width: 0;
-	min-height: 0;
-
-	padding: 28px 36px;
-
-	overflow: auto;
-
-	background: #f8f7f4;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 28px 36px;
+  overflow: auto;
+  background: #f8f7f4;
 }
 
-/* =========================
-   BACK
-   ========================= */
+/* ========================= BACK ========================= */
 
 .backBtnContainer {
-	display: flex;
-	justify-content: flex-start;
-	align-items: center;
-	margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .backBtn {
-	min-height: 44px;
-	padding: 10px 18px;
-
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-
-	border: 1px solid #d8d8d8;
-	border-radius: 9px;
-	background: #fff;
-
-	color: #333;
-	font-family: inherit;
-	font-size: 15px;
-	font-weight: 700;
-
-	cursor: pointer;
-	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-
-	transition:
-		color 0.2s ease,
-		border-color 0.2s ease,
-		background-color 0.2s ease,
-		transform 0.2s ease;
+  min-height: 44px;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #d8d8d8;
+  border-radius: 9px;
+  background: #fff;
+  color: #333;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+  transition: color 0.2s ease,
+  border-color 0.2s ease,
+  background-color 0.2s ease,
+  transform 0.2s ease;
 }
 
 .backBtn:hover {
-	color: #b8860b;
-	border-color: #b8860b;
-	background: #fffaf0;
-	transform: translateY(-1px);
+  color: #b8860b;
+  border-color: #b8860b;
+  background: #fffaf0;
+  transform: translateY(-1px);
 }
 
 .backBtn:focus-visible {
-	outline: 3px solid rgba(184, 134, 11, 0.2);
-	outline-offset: 2px;
+  outline: 3px solid rgba(184, 134, 11, 0.2);
+  outline-offset: 2px;
 }
 
-/* =========================
-   CARD
-   ========================= */
+/* ========================= CARD ========================= */
 
 .contentCard {
-	width: 100%;
-	min-height: 70vh;
-
-	padding: 28px;
-
-	box-sizing: border-box;
-
-	background: #fff;
-	border-radius: 10px;
+  width: 100%;
+  min-height: 70vh;
+  padding: 28px;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 10px;
 }
 
-/* =========================
-   HEADER
-   ========================= */
+/* ========================= HEADER ========================= */
 
 .contentHeader {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-
-	gap: 25px;
-
-	margin-bottom: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 25px;
+  margin-bottom: 22px;
 }
 
 .homeworkInfo {
-	flex-shrink: 0;
+  flex-shrink: 0;
 }
 
 .pageTitle {
-	margin: 0 0 6px;
-
-	color: #111;
-	font-size: 28px;
-	font-weight: 700;
+  margin: 0 0 6px;
+  color: #111;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .pageSubtitle {
-	margin: 0 0 7px;
-
-	color: #666;
-	font-size: 14px;
+  margin: 0 0 7px;
+  color: #666;
+  font-size: 14px;
 }
 
 .summary {
-	margin: 0;
-
-	color: #777;
-	font-size: 12px;
+  margin: 0;
+  color: #777;
+  font-size: 12px;
 }
 
-/* =========================
-   HEADER RIGHT
-   ========================= */
+/* ========================= HEADER RIGHT ========================= */
 
 .headerActions {
-	flex: 1;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
 
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
+.headerActions > * {
+  min-width: 0;
+  max-width: 100%;
+}
 
-	gap: 10px;
+.headerActions > .searchBox,
+.headerActions > .teacherSelect {
+  width: 100%;
+}
+
+.headerActions > .unassignBtn {
+  height: 40px;
+  padding: 0 10px;
 }
 
 /* SEARCH */
 
 .searchBox {
-	width: 220px;
-	height: 40px;
-
-	display: flex;
-	align-items: center;
-
-	padding: 0 12px;
-
-	box-sizing: border-box;
-
-	background: #fff;
-
-	border: 1px solid #ddd;
-	border-radius: 8px;
+  width: 220px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
 }
 
 .searchBox:focus-within {
-	border-color: #c48a00;
+  border-color: #c48a00;
 }
 
 .searchBox input {
-	width: 100%;
-
-	border: none;
-	outline: none;
-
-	background: transparent;
-
-	color: #333;
-	font-size: 13px;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #333;
+  font-size: 13px;
 }
 
 .searchBox input::placeholder {
-	color: #aaa;
+  color: #aaa;
 }
 
 /* TEACHER */
 
 .teacherSelect {
-	width: 190px;
-	height: 40px;
-
-	padding: 0 12px;
-
-	background: #fff;
-
-	border: 1px solid #ddd;
-	border-radius: 8px;
-
-	color: #444;
-	font-size: 13px;
-
-	outline: none;
-	cursor: pointer;
+  width: 190px;
+  height: 40px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #444;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
 }
 
 .teacherSelect:focus {
-	border-color: #c48a00;
+  border-color: #c48a00;
 }
 
 /* ASSIGN */
 
 .assignBtn {
-	height: 40px;
-	min-width: 105px;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	padding: 0 16px;
-
-	background: #c48a00;
-
-	border: 1px solid #c48a00;
-	border-radius: 8px;
-
-	color: #fff;
-	font-size: 13px;
-	font-weight: 600;
-
-	white-space: nowrap;
-
-	cursor: pointer;
+  height: 40px;
+  min-width: 105px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: #c48a00;
+  border: 1px solid #c48a00;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .assignBtn:hover:not(:disabled) {
-	background: #a37300;
+  background: #a37300;
 }
 
 .assignBtn:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* REASSIGN */
 
 .reassignBtn {
-	background: #9b6b00;
-	border-color: #9b6b00;
+  background: #9b6b00;
+  border-color: #9b6b00;
 }
 
 .reassignBtn:hover:not(:disabled) {
-	background: #7d5600;
+  background: #7d5600;
 }
 
-/* =========================
-   ERROR
-   ========================= */
+/* ========================= ERROR ========================= */
 
 .errorMessage {
-	margin-bottom: 14px;
-
-	padding: 10px 12px;
-
-	background: #fef2f2;
-
-	border: 1px solid #fecaca;
-	border-radius: 7px;
-
-	color: #dc2626;
-	font-size: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  color: #dc2626;
+  font-size: 12px;
 }
 
-/* =========================
-   TABLE
-   ========================= */
+/* ========================= TABLE ========================= */
 
 .tableContainer {
-	width: 100%;
-
-	overflow-x: auto;
-
-	border: 1px solid #eee;
-	border-radius: 8px;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
 }
 
 .table {
-	width: 100%;
-	min-width: 1050px;
-
-	border-collapse: collapse;
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
 }
 
 .table th {
-	height: 70px;
-
-	padding: 12px 14px;
-
-	background: #eef1f5;
-
-	border-bottom: 2px solid #ddd;
-
-	color: #666;
-	font-size: 13px;
-	font-weight: 600;
-
-	text-align: center;
-	vertical-align: middle;
-
-	white-space: nowrap;
+  height: 70px;
+  padding: 12px 14px;
+  background: #eef1f5;
+  border-bottom: 2px solid #ddd;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .table td {
-	padding: 16px 14px;
-
-	border-bottom: 1px solid #f1f1f1;
-
-	color: #333;
-	font-size: 13px;
-
-	text-align: center;
-	vertical-align: middle;
+  padding: 16px 14px;
+  border-bottom: 1px solid #f1f1f1;
+  color: #333;
+  font-size: 13px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 /* Student ID */
 
 .table th:nth-child(2),
 .table td:nth-child(2),
-
 /* Date */
-
 .table th:nth-child(3),
 .table td:nth-child(3),
-
 /* Student */
-
 .table th:nth-child(4),
 .table td:nth-child(4) {
-	text-align: left;
+  text-align: left;
 }
 
-/* =========================
-   RANGE
-   ========================= */
+/* ========================= RANGE ========================= */
 
 .rangeColumn {
-	width: 150px;
-	min-width: 150px;
-
-	padding: 8px 10px !important;
+  width: 150px;
+  min-width: 150px;
+  padding: 8px 10px !important;
 }
 
 .idRange {
-	width: 100%;
-
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-
-	gap: 6px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 /* From + To = same row */
 
 .rangeInputs {
-	width: 100%;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	gap: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .rangeItem {
-	display: flex;
-	align-items: center;
-
-	gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .rangeItem span {
-	color: #777;
-	font-size: 10px;
-	font-weight: 500;
-
-	white-space: nowrap;
+  color: #777;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .rangeItem input {
-	width: 34px;
-	height: 24px;
-
-	padding: 0 3px;
-
-	box-sizing: border-box;
-
-	background: #fff;
-
-	border: 1px solid #ccc;
-	border-radius: 5px;
-
-	color: #333;
-	font-size: 10px;
-
-	text-align: center;
-
-	outline: none;
+  width: 34px;
+  height: 24px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  color: #333;
+  font-size: 10px;
+  text-align: center;
+  outline: none;
 }
 
 .rangeItem input:focus {
-	border-color: #c48a00;
+  border-color: #c48a00;
 }
 
 /* hide number arrows */
 
 .rangeItem input::-webkit-inner-spin-button,
 .rangeItem input::-webkit-outer-spin-button {
-	-webkit-appearance: none;
-	margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .rangeItem input[type='number'] {
-	-moz-appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 /* SELECT RANGE */
 
+.rangeActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.rangeClearBtn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.rangeClearBtn:hover:not(:disabled) {
+  background: #fff3f3;
+  border-color: #f1bbbb;
+  color: #b42323;
+}
+
+.rangeClearBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rangeClearBtn:focus-visible,
+.rangeSelectBtn:focus-visible {
+  outline: 3px solid rgba(196, 138, 0, 0.25);
+  outline-offset: 2px;
+}
+
 .rangeSelectBtn {
-	width: 72px;
-	height: 24px;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	padding: 0;
-
-	background: #c48a00;
-
-	border: none;
-	border-radius: 5px;
-
-	color: #fff;
-
-	font-size: 10px;
-	font-weight: 600;
-
-	cursor: pointer;
+  width: 72px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #c48a00;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .rangeSelectBtn:hover:not(:disabled) {
-	background: #a37300;
+  background: #a37300;
 }
 
 .rangeSelectBtn:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-/* =========================
-   ROW
-   ========================= */
+/* ========================= ROW ========================= */
 
 .assignedRow {
-	background: #fff9e8;
+  background: #fff9e8;
 }
 
 .selectedRow {
-	background: #fdf1c6;
+  background: #fdf1c6;
 }
 
 .selectedRow:hover {
-	background: #fae8a7;
+  background: #fae8a7;
 }
 
-/* =========================
-   CHECKBOX
-   ========================= */
+/* ========================= CHECKBOX ========================= */
 
 .checkbox {
-	width: 17px;
-	height: 17px;
-
-	accent-color: #c48a00;
-
-	cursor: pointer;
+  width: 17px;
+  height: 17px;
+  accent-color: #c48a00;
+  cursor: pointer;
 }
 
 .checkbox:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-/* =========================
-   TEXT
-   ========================= */
+/* ========================= TEXT ========================= */
 
 .boldText {
-	color: #222;
-
-	font-size: 13px;
-	font-weight: 700;
+  color: #222;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .subText {
-	margin-top: 4px;
-
-	color: #888;
-	font-size: 11px;
+  margin-top: 4px;
+  color: #888;
+  font-size: 11px;
 }
 
-/* =========================
-   STATUS
-   ========================= */
+/* ========================= STATUS ========================= */
 
 .readyStatus,
 .assignedStatus,
 .reviewedStatus {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-
-	padding: 5px 10px;
-
-	border-radius: 20px;
-
-	font-size: 11px;
-	font-weight: 600;
-
-	white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .readyStatus {
-	background: #f3f4f6;
-	color: #555;
+  background: #f3f4f6;
+  color: #555;
 }
 
 .assignedStatus {
-	background: #fff3cd;
-	color: #896000;
+  background: #fff3cd;
+  color: #896000;
 }
 
 .reviewedStatus {
-	background: #dcfce7;
-	color: #15803d;
+  background: #dcfce7;
+  color: #15803d;
 }
 
-/* =========================
-   REVIEW
-   ========================= */
+/* ========================= REVIEW ========================= */
 
 .reviewBtn {
-	height: 34px;
-
-	padding: 0 14px;
-
-	background: #fff;
-
-	border: 1px solid #ccc;
-	border-radius: 8px;
-
-	color: #555;
-
-	font-size: 12px;
-	font-weight: 600;
-
-	cursor: pointer;
+  height: 34px;
+  padding: 0 14px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .reviewBtn:hover:not(:disabled) {
-	background: #fff9e8;
-
-	border-color: #c48a00;
-
-	color: #896000;
+  background: #fff9e8;
+  border-color: #c48a00;
+  color: #896000;
 }
 
 .reviewBtn:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-/* =========================
-   EMPTY
-   ========================= */
+/* ========================= EMPTY ========================= */
 
 .emptyCell {
-	padding: 35px !important;
-
-	color: #777 !important;
-
-	text-align: center !important;
+  padding: 35px !important;
+  color: #777 !important;
+  text-align: center !important;
 }
 
-/* =========================
-   FOOTER
-   ========================= */
+/* ========================= FOOTER ========================= */
 
 .footerBrand {
-	margin-top: 25px;
-
-	color: #aaa;
-
-	font-size: 12px;
-	text-align: center;
+  margin-top: 25px;
+  color: #aaa;
+  font-size: 12px;
+  text-align: center;
 }
 
-/* =========================
-   ACTION BUTTONS
-   ========================= */
+/* ========================= ACTION BUTTONS ========================= */
 
 .actionButtons {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .unassignBtn,
 .unassignBtn2 {
-	height: 34px;
-	padding: 0 14px;
-
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-
-	border: 1px solid #f1bbbb;
-	border-radius: 8px;
-
-	background: #fff3f3;
-	color: #b42323;
-
-	font-size: 12px;
-	font-weight: 600;
-
-	cursor: pointer;
-	white-space: nowrap;
+  height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #f1bbbb;
+  border-radius: 8px;
+  background: #fff3f3;
+  color: #b42323;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .unassignBtn:hover:not(:disabled),
 .unassignBtn2:hover:not(:disabled) {
-	background: #ffe3e3;
+  background: #ffe3e3;
 }
 
 .unassignBtn:disabled,
 .unassignBtn2:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .unassignBtn:focus-visible,
 .unassignBtn2:focus-visible {
-	outline: 3px solid rgba(189, 137, 7, 0.25);
-	outline-offset: 2px;
+  outline: 3px solid rgba(189, 137, 7, 0.25);
+  outline-offset: 2px;
 }
 
 /* Desktop/tablet use the normal table. */
+
 .desktopHomeworkTable {
-	display: block;
+  display: block;
 }
 
 .mobileHomeworkList {
-	display: none;
+  display: none;
 }
 
-/* =========================
-   TABLET
-   ========================= */
+/* ========================= TABLET ========================= */
 
 @media (max-width: 1024px) {
-	.mainContent {
-		width: 100%;
-		padding: 24px;
-	}
+  .mainContent {
+    width: 100%;
+    padding: 24px;
+  }
 
-	.navbar {
-		padding: 10px 18px;
-	}
+  .navbar {
+    padding: 10px 18px;
+  }
 
-	.profileName {
-		display: none;
-	}
+  .profileName {
+    display: none;
+  }
 
-	.contentHeader {
-		flex-direction: column;
-		gap: 16px;
-	}
+  .contentHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
 
-	.headerActions {
-		width: 100%;
-		justify-content: flex-start;
-		flex-wrap: wrap;
-	}
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 
-	.searchBox {
-		flex: 1;
-		min-width: 220px;
-	}
+  .searchBox {
+    flex: 1;
+    min-width: 0;
+  }
 
-	.table {
-		min-width: 950px;
-	}
+  .table {
+    min-width: 950px;
+  }
 }
 
-/* =========================
-   MOBILE
-   ========================= */
-
-@media (max-width: 600px) {
-	.navbar {
-		padding: 8px 12px;
-	}
-
-	.logoIcon {
-		display: none;
-	}
-
-	.brandName {
-		font-size: 16px;
-	}
-
-	.profileName {
-		display: none;
-	}
-
-	.mainContent {
-		padding: 16px 10px;
-	}
-
-	.backBtnContainer {
-		margin-bottom: 14px;
-	}
-
-	.backBtn {
-		min-height: 40px;
-		padding: 8px 13px;
-		font-size: 12px;
-	}
-
-	.contentCard {
-		min-height: auto;
-		padding: 16px 10px;
-		border-radius: 10px;
-	}
-
-	.contentHeader {
-		gap: 14px;
-		margin-bottom: 16px;
-	}
-
-	.homeworkInfo {
-		width: 100%;
-	}
-
-	.pageTitle {
-		font-size: 23px;
-	}
-
-	.pageSubtitle {
-		font-size: 13px;
-	}
-
-	.summary {
-		font-size: 11px;
-		line-height: 1.6;
-	}
-
-	/* Search on row 1, teacher on row 2,
-	   remove + assign on row 3. */
-	.headerActions {
-		width: 100%;
-
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-
-	.searchBox {
-		grid-column: 1 / -1;
-		grid-row: 1;
-
-		width: 100%;
-		min-width: 0;
-		height: 40px;
-	}
-
-	.teacherSelect {
-		grid-column: 1 / -1;
-		grid-row: 2;
-
-		width: 100%;
-		height: 40px;
-	}
-
-	.headerActions > .unassignBtn {
-		grid-column: 1;
-		grid-row: 3;
-
-		width: 100%;
-		height: 40px;
-		min-height: 40px;
-		padding: 0 8px;
-
-		font-size: 10px;
-	}
-
-	.assignBtn {
-		grid-column: 2;
-		grid-row: 3;
-
-		width: 100%;
-		height: 40px;
-		min-width: 0;
-		padding: 0 8px;
-
-		font-size: 11px;
-	}
-
-	/* Switch from desktop table to mobile cards. */
-	.desktopHomeworkTable {
-		display: none;
-	}
-
-	.mobileHomeworkList {
-		width: 100%;
-
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-
-	/* QUICK RANGE */
-
-	.mobileRangeCard {
-		width: 100%;
-		padding: 16px;
-
-		box-sizing: border-box;
-
-		background: #f8fafc;
-		border: 1px solid #dfe5ec;
-		border-radius: 14px;
-	}
-
-	.mobileRangeHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-
-		margin-bottom: 16px;
-	}
-
-	.mobileRangeHeader h3 {
-		margin: 0;
-
-		color: #3e4c63;
-		font-size: 15px;
-		font-weight: 700;
-	}
-
-	.mobileSelectAll {
-		padding: 0;
-
-		background: transparent;
-		border: none;
-		border-bottom: 1px solid #a96f00;
-
-		color: #a96f00;
-		font-size: 12px;
-		font-weight: 700;
-
-		cursor: pointer;
-	}
-
-	.mobileRangeControls {
-		width: 100%;
-
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 90px;
-		align-items: end;
-		gap: 8px;
-	}
-
-	.mobileRangeControls label {
-		min-width: 0;
-
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	.mobileRangeControls label span {
-		color: #64748b;
-		font-size: 11px;
-		white-space: nowrap;
-	}
-
-	.mobileRangeControls input {
-		width: 100%;
-		min-width: 0;
-		height: 38px;
-
-		padding: 0 6px;
-
-		box-sizing: border-box;
-
-		background: #fff;
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
-
-		color: #1f2937;
-		font-size: 13px;
-		font-weight: 600;
-		text-align: center;
-
-		outline: none;
-	}
-
-	.mobileRangeControls input:focus {
-		border-color: #c48a00;
-		box-shadow: 0 0 0 2px rgba(196, 138, 0, 0.08);
-	}
-
-	.mobileRangeControls input::-webkit-inner-spin-button,
-	.mobileRangeControls input::-webkit-outer-spin-button {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	.mobileRangeControls input[type='number'] {
-		-moz-appearance: textfield;
-	}
-
-	.mobileApplyRange {
-		width: 90px;
-		height: 38px;
-
-		padding: 0 8px;
-
-		background: #c48a00;
-		border: 1px solid #c48a00;
-		border-radius: 8px;
-
-		color: #fff;
-		font-size: 11px;
-		font-weight: 700;
-
-		cursor: pointer;
-	}
-
-	.mobileApplyRange:hover:not(:disabled) {
-		background: #ad7900;
-		border-color: #ad7900;
-	}
-
-	.mobileApplyRange:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-	}
-
-	/* STUDENT CARD */
-
-	.mobileStudentCard {
-		width: 100%;
-		padding: 16px;
-
-		box-sizing: border-box;
-
-		background: #fff;
-		border: 1px solid #e0e5eb;
-		border-radius: 14px;
-
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.035);
-
-		transition:
-			border-color 0.2s ease,
-			background-color 0.2s ease;
-	}
-
-	.mobileStudentSelected {
-		background: #fffaf0;
-		border-color: #dfb74f;
-	}
-
-	.mobileCardTop {
-		width: 100%;
-
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-
-		padding-bottom: 13px;
-
-		border-bottom: 1px solid #edf0f3;
-	}
-
-	.mobileIdArea {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-	}
-
-	.mobileCheckbox {
-		width: 18px;
-		height: 18px;
-
-		margin: 0;
-
-		accent-color: #c48a00;
-		cursor: pointer;
-	}
-
-	.mobileCheckbox:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	.mobileIdBadge {
-		padding: 5px 9px;
-
-		background: #f1f5f9;
-		border-radius: 8px;
-
-		color: #334155;
-		font-size: 12px;
-		font-weight: 700;
-	}
-
-	.mobileStatus {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-
-		padding: 6px 11px;
-
-		border-radius: 20px;
-
-		font-size: 11px;
-		font-weight: 700;
-		white-space: nowrap;
-	}
-
-	.mobileStatusReady {
-		background: #f1f5f9;
-		color: #475569;
-	}
-
-	.mobileStatusAssigned {
-		background: #fff3cd;
-		color: #896000;
-	}
-
-	.mobileStatusReviewed {
-		background: #dcfce7;
-		color: #15803d;
-	}
-
-	/* STUDENT + DATE */
-
-	.mobileStudentMain {
-		width: 100%;
-
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 14px;
-
-		padding: 16px 0;
-	}
-
-	.mobileStudentInfo {
-		min-width: 0;
-
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.mobileStudentInfo strong {
-		color: #111827;
-		font-size: 15px;
-		font-weight: 700;
-		line-height: 1.3;
-
-		overflow-wrap: anywhere;
-	}
-
-	.mobileStudentInfo span {
-		color: #94a3b8;
-		font-size: 12px;
-	}
-
-	.mobileDateInfo {
-		flex-shrink: 0;
-
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 4px;
-	}
-
-	.mobileDateInfo strong {
-		color: #64748b;
-		font-size: 12px;
-		font-weight: 600;
-	}
-
-	.mobileDateInfo span {
-		color: #94a3b8;
-		font-size: 11px;
-	}
-
-	/* PAGES + TEACHER */
-
-	.mobileInfoPanel {
-		width: 100%;
-
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 12px;
-
-		padding: 13px;
-
-		box-sizing: border-box;
-
-		background: #f8fafc;
-		border: 1px solid #edf0f3;
-		border-radius: 10px;
-	}
-
-	.mobileInfoItem {
-		min-width: 0;
-
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
-
-	.mobileInfoItem span {
-		color: #94a3b8;
-		font-size: 10px;
-		font-weight: 500;
-	}
-
-	.mobileInfoItem strong {
-		color: #334155;
-		font-size: 12px;
-		font-weight: 700;
-		line-height: 1.35;
-
-		overflow-wrap: anywhere;
-	}
-
-	/* MOBILE ACTIONS */
-
-	.mobileActions {
-		width: 100%;
-
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-
-		margin-top: 14px;
-	}
-
-	.mobileReviewBtn {
-		width: 100%;
-		height: 44px;
-
-		display: flex;
-		align-items: center;
-		justify-content: center;
-
-		padding: 0 14px;
-
-		box-sizing: border-box;
-
-		background: #c48a00;
-		border: 1px solid #c48a00;
-		border-radius: 9px;
-
-		color: #fff;
-		font-size: 12px;
-		font-weight: 700;
-
-		cursor: pointer;
-
-		transition:
-			background-color 0.2s ease,
-			border-color 0.2s ease;
-	}
-
-	.mobileReviewBtn:hover:not(:disabled) {
-		background: #ad7900;
-		border-color: #ad7900;
-	}
-
-	.mobileReviewBtn:disabled {
-		background: #e7d19f;
-		border-color: #e7d19f;
-		cursor: not-allowed;
-	}
-
-	.mobileRemoveBtn {
-		width: 100%;
-		height: 40px;
-
-		display: flex;
-		align-items: center;
-		justify-content: center;
-
-		padding: 0 14px;
-
-		box-sizing: border-box;
-
-		background: #fff5f5;
-		border: 1px solid #f2b8b8;
-		border-radius: 9px;
-
-		color: #c62828;
-		font-size: 11px;
-		font-weight: 700;
-
-		cursor: pointer;
-	}
-
-	.mobileRemoveBtn:hover:not(:disabled) {
-		background: #ffe8e8;
-		border-color: #e69b9b;
-	}
-
-	.mobileRemoveBtn:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-	}
-
-	.mobileEmpty {
-		width: 100%;
-
-		padding: 30px 15px;
-
-		box-sizing: border-box;
-
-		background: #fff;
-		border: 1px solid #e5e7eb;
-		border-radius: 12px;
-
-		color: #777;
-		font-size: 12px;
-		text-align: center;
-	}
-
-	.footerBrand {
-		margin-top: 18px;
-	}
+/* ========================= MOBILE ========================= */
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 8px 12px;
+  }
+
+  .logoIcon {
+    display: none;
+  }
+
+  .brandName {
+    font-size: 16px;
+  }
+
+  .profileName {
+    display: none;
+  }
+
+  .mainContent {
+    padding: 16px 10px;
+  }
+
+  .backBtnContainer {
+    margin-bottom: 14px;
+  }
+
+  .backBtn {
+    min-height: 40px;
+    padding: 8px 13px;
+    font-size: 12px;
+  }
+
+  .contentCard {
+    min-height: auto;
+    padding: 16px 10px;
+    border-radius: 10px;
+  }
+
+  .contentHeader {
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .homeworkInfo {
+    width: 100%;
+  }
+
+  .pageTitle {
+    font-size: 23px;
+  }
+
+  .pageSubtitle {
+    font-size: 13px;
+  }
+
+  .summary {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  /* Filter, search and teacher each get a row above the actions. */
+
+  .headerActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .searchBox {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+  }
+
+  .teacherSelect {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+    height: 40px;
+  }
+
+  .filterSelect {
+    grid-row: 1;
+  }
+
+  .headerActions > .unassignBtn {
+    grid-column: 1;
+    grid-row: 4;
+    width: 100%;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .assignBtn {
+    grid-column: 2;
+    grid-row: 4;
+    width: 100%;
+    height: 40px;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  /* Switch from desktop table to mobile cards. */
+
+  .desktopHomeworkTable {
+    display: none;
+  }
+
+  .mobileHomeworkList {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* QUICK RANGE */
+
+  .mobileRangeCard {
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    background: #f8fafc;
+    border: 1px solid #dfe5ec;
+    border-radius: 14px;
+  }
+
+  .mobileRangeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mobileRangeHeader h3 {
+    margin: 0;
+    color: #3e4c63;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .mobileSelectAll {
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #a96f00;
+    color: #a96f00;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobileRangeControls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 90px;
+    align-items: end;
+    gap: 8px;
+  }
+
+  .mobileRangeControls label {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .mobileRangeControls label span {
+    color: #64748b;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .mobileRangeControls input {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #1f2937;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+  }
+
+  .mobileRangeControls input:focus {
+    border-color: #c48a00;
+    box-shadow: 0 0 0 2px rgba(196, 138, 0, 0.08);
+  }
+
+  .mobileRangeControls input::-webkit-inner-spin-button,
+  .mobileRangeControls input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .mobileRangeControls input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  .mobileApplyRange {
+    width: 90px;
+    height: 38px;
+    padding: 0 8px;
+    background: #c48a00;
+    border: 1px solid #c48a00;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobileApplyRange:hover:not(:disabled) {
+    background: #ad7900;
+    border-color: #ad7900;
+  }
+
+  .mobileApplyRange:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* STUDENT CARD */
+
+  .mobileStudentCard {
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #e0e5eb;
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.035);
+    transition: border-color 0.2s ease,
+    background-color 0.2s ease;
+  }
+
+  .mobileStudentSelected {
+    background: #fffaf0;
+    border-color: #dfb74f;
+  }
+
+  .mobileCardTop {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .mobileIdArea {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .mobileCheckbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #c48a00;
+    cursor: pointer;
+  }
+
+  .mobileCheckbox:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobileIdBadge {
+    padding: 5px 9px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .mobileStatus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .mobileStatusReady {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .mobileStatusAssigned {
+    background: #fff3cd;
+    color: #896000;
+  }
+
+  .mobileStatusReviewed {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  /* STUDENT + DATE */
+
+  .mobileStudentMain {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 0;
+  }
+
+  .mobileStudentInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mobileStudentInfo strong {
+    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .mobileStudentInfo span {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .mobileDateInfo {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .mobileDateInfo strong {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .mobileDateInfo span {
+    color: #94a3b8;
+    font-size: 11px;
+  }
+
+  /* PAGES + TEACHER */
+
+  .mobileInfoPanel {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 13px;
+    box-sizing: border-box;
+    background: #f8fafc;
+    border: 1px solid #edf0f3;
+    border-radius: 10px;
+  }
+
+  .mobileInfoItem {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .mobileInfoItem span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .mobileInfoItem strong {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  /* MOBILE ACTIONS */
+
+  .mobileActions {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .mobileActions > button {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 44px;
+    padding: 0 8px;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .mobileReviewBtn {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    box-sizing: border-box;
+    background: #c48a00;
+    border: 1px solid #c48a00;
+    border-radius: 9px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+    border-color 0.2s ease;
+  }
+
+  .mobileReviewBtn:hover:not(:disabled) {
+    background: #ad7900;
+    border-color: #ad7900;
+  }
+
+  .mobileReviewBtn:disabled {
+    background: #e7d19f;
+    border-color: #e7d19f;
+    cursor: not-allowed;
+  }
+
+  .mobileRemoveBtn {
+    width: 100%;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    box-sizing: border-box;
+    background: #fff5f5;
+    border: 1px solid #f2b8b8;
+    border-radius: 9px;
+    color: #c62828;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobileRemoveBtn:hover:not(:disabled) {
+    background: #ffe8e8;
+    border-color: #e69b9b;
+  }
+
+  .mobileRemoveBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .mobileEmpty {
+    width: 100%;
+    padding: 30px 15px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    color: #777;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .footerBrand {
+    margin-top: 18px;
+  }
 }
 
-/* =========================
-   SMALL PHONE
-   ========================= */
+/* ========================= SMALL PHONE ========================= */
 
 @media (max-width: 390px) {
-	.mobileRangeCard,
-	.mobileStudentCard {
-		padding: 14px;
-	}
+  .mobileRangeCard,
+  .mobileStudentCard {
+    padding: 14px;
+  }
 
-	.mobileRangeHeader h3 {
-		font-size: 14px;
-	}
+  .mobileRangeHeader h3 {
+    font-size: 14px;
+  }
 
-	.mobileRangeControls {
-		grid-template-columns: 1fr 1fr;
-	}
+  .mobileRangeControls {
+    grid-template-columns: 1fr 1fr;
+  }
 
-	.mobileApplyRange {
-		grid-column: 1 / -1;
+  .mobileApplyRange {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 
-		width: 100%;
-	}
+  .mobileStudentInfo strong {
+    font-size: 14px;
+  }
 
-	.mobileStudentInfo strong {
-		font-size: 14px;
-	}
+  .mobileInfoPanel {
+    gap: 8px;
+    padding: 11px;
+  }
 
-	.mobileInfoPanel {
-		gap: 8px;
-		padding: 11px;
-	}
+  .mobileReviewBtn {
+    height: 42px;
+  }
 
-	.mobileReviewBtn {
-		height: 42px;
-	}
-
-	.mobileRemoveBtn {
-		height: 38px;
-	}
+  .mobileRemoveBtn {
+    height: 38px;
+  }
 }

@@ -117,6 +117,18 @@ function HomeworkDetailsContent({
 
 	const [previewImage, setPreviewImage] =
 		useState<PreviewImage | null>(null);
+	const [isMobileView, setIsMobileView] = useState(false);
+
+	useEffect(() => {
+		const media = window.matchMedia('(max-width: 900px)');
+		const updateMobileView = () => {
+			setIsMobileView(media.matches);
+			if (media.matches) setPreviewImage(null);
+		};
+		updateMobileView();
+		media.addEventListener('change', updateMobileView);
+		return () => media.removeEventListener('change', updateMobileView);
+	}, []);
 
 	/* ========================================
 	   IMAGE ROTATIONS
@@ -558,6 +570,7 @@ function HomeworkDetailsContent({
 		image: HomeworkImage,
 		index: number,
 	) => {
+		if (window.matchMedia('(max-width: 900px)').matches) return;
 		setPreviewImage({
 			id: image.id,
 			url: getImageUrl(
@@ -661,6 +674,8 @@ function HomeworkDetailsContent({
 				return;
 			}
 
+			const clearingMarks = reviews.every((review) => review.marks.trim() === '');
+
 			/* Validate marks */
 
 			for (
@@ -672,7 +687,7 @@ function HomeworkDetailsContent({
 					reviews[index];
 
 				if (
-					review.marks.trim() ===
+					!clearingMarks && review.marks.trim() ===
 					''
 				) {
 					setError(
@@ -689,7 +704,7 @@ function HomeworkDetailsContent({
 				);
 
 				if (
-					Number.isNaN(marks) ||
+					!Number.isInteger(marks) ||
 					marks < 0
 				) {
 					setError(
@@ -701,6 +716,11 @@ function HomeworkDetailsContent({
 					return;
 				}
 			}
+
+            if (submission.homework.totalMarks != null && earnedMarks > submission.homework.totalMarks) {
+                setError(`Earned marks cannot exceed the total marks (${submission.homework.totalMarks}).`);
+                return;
+            }
 
 			if (
 				!(
@@ -717,30 +737,6 @@ function HomeworkDetailsContent({
 			setError('');
 
 			try {
-				/* Save every page */
-
-				for (const review of reviews) {
-					await apiFetch(
-						admin
-							? `/homework-images/admin/${review.imageId}/review`
-							: `/homework-images/teacher/assigned/${review.imageId}`,
-						{
-							method: 'PATCH',
-
-							body: JSON.stringify(
-								{
-									marks: Number(
-										review.marks,
-									),
-
-									remark:
-										review.remark.trim(),
-								},
-							),
-						},
-					);
-				}
-
 				/* Save General Comment */
 
 				await apiFetch(
@@ -752,6 +748,11 @@ function HomeworkDetailsContent({
 
 						body: JSON.stringify(
 							{
+                                pages: reviews.map(review => ({
+                                    imageId: review.imageId,
+                                    marks: clearingMarks ? null : Number(review.marks),
+                                    remark: review.remark.trim(),
+                                })),
 								remark:
 									generalRemark.trim(),
 							},
@@ -770,6 +771,16 @@ function HomeworkDetailsContent({
 				setSaving(false);
 			}
 		};
+
+	const earnedMarks = reviews.reduce((total, review) => {
+		const marks = Number(review.marks);
+		return total + (Number.isFinite(marks) && marks >= 0 ? marks : 0);
+	}, 0);
+    const marksChanged = submission?.status === 'REVIEWED' && reviews.some(review => {
+        const original = submission.images.find(image => image.id === review.imageId)?.marks ?? null;
+        const current = review.marks.trim() === '' ? null : Number(review.marks);
+        return original !== current;
+    });
 
 	/* ========================================
 	   LOADING
@@ -1040,7 +1051,8 @@ function HomeworkDetailsContent({
 																index,
 															)
 														}
-														title='Click to enlarge image'
+														disabled={isMobileView}
+														title={isMobileView ? undefined : 'Click to enlarge image'}
 													>
 														<img
 															src={getImageUrl(
@@ -1380,6 +1392,11 @@ function HomeworkDetailsContent({
 											styles.formGroup
 										}
 									>
+                                        <div className={styles.marksSummary} aria-live='polite'>
+                                            <div><span>ပေးမှတ် :</span><strong>{submission.homework.totalMarks ?? '—'}</strong></div>
+                                            <div><span>ရမှတ် :</span><strong>{earnedMarks}</strong></div>
+                                        </div>
+
 										<label
 											className={
 												styles.formLabel
@@ -1418,21 +1435,6 @@ function HomeworkDetailsContent({
 										<button
 											type='button'
 											className={
-												styles.btnReject
-											}
-											onClick={() =>
-												router.back()
-											}
-											disabled={
-												saving
-											}
-										>
-											Cancel
-										</button>
-
-										<button
-											type='button'
-											className={
 												styles.btnApprove
 											}
 											onClick={() =>
@@ -1448,7 +1450,22 @@ function HomeworkDetailsContent({
 										>
 											{saving
 												? 'Saving...'
-												: 'Finish Review'}
+												: marksChanged ? 'Update' : 'Finish Review'}
+										</button>
+
+										<button
+											type='button'
+											className={
+												styles.btnReject
+											}
+											onClick={() =>
+												router.back()
+											}
+											disabled={
+												saving
+											}
+										>
+											Cancel
 										</button>
 									</div>
 								</div>
