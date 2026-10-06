@@ -6,13 +6,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
+import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
 import styles from './student.module.css';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
 const API_URL = API_BASE_URL;
 
-const PAGE_SIZE = 10;
 
 type UserRole = 'SUPER_ADMIN' | 'TEACHER';
 
@@ -143,7 +143,6 @@ export default function TeacherStudentPage() {
 
 	const [searchTerm, setSearchTerm] = useState('');
 
-	const [currentPage, setCurrentPage] = useState(1);
 
 	const [loading, setLoading] = useState(true);
 
@@ -300,27 +299,7 @@ export default function TeacherStudentPage() {
 		);
 	}, [searchTerm, students]);
 
-	const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
-
-	const paginatedStudents = useMemo(() => {
-		const start = (currentPage - 1) * PAGE_SIZE;
-
-		return filteredStudents.slice(start, start + PAGE_SIZE);
-	}, [currentPage, filteredStudents]);
-
-	const firstEntry = filteredStudents.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-
-	const lastEntry = Math.min(currentPage * PAGE_SIZE, filteredStudents.length);
-
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [searchTerm]);
-
-	useEffect(() => {
-		if (currentPage > totalPages) {
-			setCurrentPage(totalPages);
-		}
-	}, [currentPage, totalPages]);
+	const { rows: paginatedStudents, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(filteredStudents, searchTerm);
 
 	const handleLogout = () => {
 		sessionStorage.removeItem('accessToken');
@@ -418,7 +397,8 @@ export default function TeacherStudentPage() {
 						</div>
 					)}
 
-					<div className={styles.tableContainer}>
+					<EntriesControl pageSize={pageSize} onChange={setPageSize} />
+<div className={styles.tableContainer}>
 						<table className={styles.table}>
 							<thead>
 								<tr>
@@ -505,35 +485,7 @@ export default function TeacherStudentPage() {
 						</table>
 					</div>
 
-					<div className={styles.paginationFooter}>
-						<div className={styles.entriesText}>
-							Showing {firstEntry} to {lastEntry} of {filteredStudents.length} assigned students
-						</div>
-
-						<div className={styles.paginationControls}>
-							<button
-								type='button'
-								className={styles.pageBtn}
-								disabled={currentPage <= 1}
-								onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-								aria-label='Previous page'>
-								&lt;
-							</button>
-
-							<button type='button' className={`${styles.pageBtn} ${styles.pageActive}`} aria-current='page'>
-								{currentPage} / {totalPages}
-							</button>
-
-							<button
-								type='button'
-								className={styles.pageBtn}
-								disabled={currentPage >= totalPages}
-								onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-								aria-label='Next page'>
-								&gt;
-							</button>
-						</div>
-					</div>
+					<ListPagination total={filteredStudents.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>

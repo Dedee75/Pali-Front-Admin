@@ -788,6 +788,9 @@ export default function AdminHomeworkPage() {
 
        ========================= */
 
+    const getOpenHomeworkCount = (items: Homework[]) =>
+        items.filter((homework) => !isHomeworkClosed(homework.dueDate)).length;
+
     const getBatchTabInfo = (batchId: number) => {
 
         const batchHomeworks = homeworks.filter(
@@ -799,6 +802,8 @@ export default function AdminHomeworkPage() {
         return {
 
             homeworkCount: batchHomeworks.length,
+
+            openHomeworkCount: getOpenHomeworkCount(batchHomeworks),
 
             hasPending: batchHomeworks.some((homework) =>
 
@@ -815,6 +820,8 @@ export default function AdminHomeworkPage() {
     };
 
     const allHomeworkCount = homeworks.length;
+
+    const allOpenHomeworkCount = getOpenHomeworkCount(homeworks);
 
     const hasAnyPending = homeworks.some((homework) =>
 
@@ -928,11 +935,11 @@ export default function AdminHomeworkPage() {
 
     };
 
-    const isHomeworkClosed = (
+    function isHomeworkClosed(
 
         dueDate?: string,
 
-    ) => {
+    ) {
 
         if (!dueDate) {
 
@@ -954,7 +961,7 @@ export default function AdminHomeworkPage() {
 
         return Date.now() >= dueTime;
 
-    };
+    }
 
     /* =========================
 
@@ -1748,7 +1755,7 @@ export default function AdminHomeworkPage() {
 
                                     <span>All</span>
 
-                                    <span className={styles.batchHomeworkCount}>{allHomeworkCount}</span>
+                                    <span className={styles.batchHomeworkCount} title='Open homeworks / Total homeworks'>{allOpenHomeworkCount}/{allHomeworkCount}</span>
 
                                 </span>
 
@@ -1784,7 +1791,7 @@ export default function AdminHomeworkPage() {
 
                                             <span>{batch.name}</span>
 
-                                            <span className={styles.batchHomeworkCount}>{batchInfo.homeworkCount}</span>
+                                            <span className={styles.batchHomeworkCount} title='Open homeworks / Total homeworks'>{batchInfo.openHomeworkCount}/{batchInfo.homeworkCount}</span>
 
                                         </span>
 
@@ -2625,6 +2632,7 @@ export default function AdminHomeworkPage() {
                             )}
 
                     </div>
+
 
                     <div
 

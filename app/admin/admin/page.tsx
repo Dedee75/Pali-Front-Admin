@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { confirmAction } from '../../../lib/dialog';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
+import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
 import styles from './admin.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -321,6 +322,8 @@ export default function AdminPage() {
 			.toUpperCase();
 	};
 
+	const { rows: paginatedUsers, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(users);
+
 	return (
 		<div className={styles.container}>
 			{/* Navbar */}
@@ -388,6 +391,7 @@ export default function AdminPage() {
 					)}
 
 					{/* Table */}
+					<EntriesControl pageSize={pageSize} onChange={setPageSize} />
 					<div className={styles.tableContainer}>
 						<table className={styles.table}>
 							<thead>
@@ -416,7 +420,7 @@ export default function AdminPage() {
 								)}
 
 								{!loading &&
-									users.map((user, index) => (
+									paginatedUsers.map((user, index) => (
 										<tr
 											key={user.id}
 											className={`${index % 2 === 0 ? styles.rowEven : styles.rowOdd} ${styles.clickableRow}`}>
@@ -521,6 +525,7 @@ export default function AdminPage() {
 						</table>
 					</div>
 
+					<ListPagination total={users.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>
 			</div>

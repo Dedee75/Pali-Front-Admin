@@ -2,17 +2,17 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmAction } from '../../../lib/dialog';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
+import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
 import styles from './batches.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-const PAGE_SIZE = 10;
 
 type UserRole = 'SUPER_ADMIN' | 'TEACHER';
 
@@ -79,7 +79,6 @@ export default function BatchesPage() {
 	const [error, setError] = useState('');
 	const [modalError, setModalError] = useState('');
 
-	const [currentPage, setCurrentPage] = useState(1);
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
@@ -176,19 +175,7 @@ export default function BatchesPage() {
     </svg>
   `);
 
-	const totalPages = Math.max(1, Math.ceil(batches.length / PAGE_SIZE));
-
-	useEffect(() => {
-		if (currentPage > totalPages) {
-			setCurrentPage(totalPages);
-		}
-	}, [currentPage, totalPages]);
-
-	const paginatedBatches = useMemo(() => {
-		const start = (currentPage - 1) * PAGE_SIZE;
-
-		return batches.slice(start, start + PAGE_SIZE);
-	}, [batches, currentPage]);
+	const { rows: paginatedBatches, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(batches, '');
 
 	const formatIdentity = (id: number) => `BAT-${String(id).padStart(4, '0')}`;
 
@@ -310,9 +297,7 @@ export default function BatchesPage() {
 		router.replace('/');
 	};
 
-	const firstEntry = batches.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
 
-	const lastEntry = Math.min(currentPage * PAGE_SIZE, batches.length);
 
 	return (
 		<div className={styles.container}>
@@ -377,7 +362,8 @@ export default function BatchesPage() {
 						</div>
 					)}
 
-					<div className={styles.tableContainer}>
+					<EntriesControl pageSize={pageSize} onChange={setPageSize} />
+<div className={styles.tableContainer}>
 						<table className={styles.table}>
 							<thead>
 								<tr>
@@ -505,44 +491,7 @@ export default function BatchesPage() {
 						</table>
 					</div>
 
-					<div className={styles.paginationFooter}>
-						<div className={styles.entriesText}>
-							Showing {firstEntry} to {lastEntry} of {batches.length} entries
-						</div>
-
-						<div className={styles.paginationControls}>
-							<button
-								type='button'
-								className={styles.pageBtn}
-								disabled={currentPage === 1}
-								onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
-								&lt;
-							</button>
-
-							{Array.from(
-								{
-									length: totalPages,
-								},
-								(_, index) => index + 1,
-							).map((page) => (
-								<button
-									type='button'
-									key={page}
-									className={`${styles.pageBtn} ${page === currentPage ? styles.pageActive : ''}`}
-									onClick={() => setCurrentPage(page)}>
-									{page}
-								</button>
-							))}
-
-							<button
-								type='button'
-								className={styles.pageBtn}
-								disabled={currentPage === totalPages}
-								onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
-								&gt;
-							</button>
-						</div>
-					</div>
+					<ListPagination total={batches.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>

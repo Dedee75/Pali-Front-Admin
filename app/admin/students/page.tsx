@@ -12,6 +12,7 @@ import Sidebar from '../../../components/Sidebar';
 
 import MobileNavigation from '../../../components/MobileNavigation';
 
+import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
 import styles from './student.module.css';
 
 // Backend Student API
@@ -20,7 +21,6 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 
 const API_URL = `${API_BASE_URL}/students`;
 
-const ITEMS_PER_PAGE = 10;
 
 const DEFAULT_AVATAR =
 	'data:image/svg+xml;charset=UTF-8,' +
@@ -183,7 +183,6 @@ export default function AdminStudentPage() {
 	const [batches, setBatches] = useState<BackendBatch[]>([]);
 	const [batchesLoading, setBatchesLoading] = useState(true);
 
-	const [currentPage, setCurrentPage] = useState(1);
 
 	// Student Registration ON / OFF
 	const [registrationEnabled, setRegistrationEnabled] = useState(true);
@@ -665,35 +664,7 @@ export default function AdminStudentPage() {
 			return sortDirection === 'asc' ? result : -result;
 		});
 
-	const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
-
-	const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-
-	const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredStudents.length);
-
-	const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
-
-	const firstVisiblePage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
-
-	const lastVisiblePage = Math.min(totalPages, firstVisiblePage + 4);
-
-	const visiblePages = Array.from(
-		{
-			length: lastVisiblePage - firstVisiblePage + 1,
-		},
-
-		(_, index) => firstVisiblePage + index,
-	);
-
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [searchTerm]);
-
-	useEffect(() => {
-		if (currentPage > totalPages) {
-			setCurrentPage(totalPages);
-		}
-	}, [currentPage, totalPages]);
+	const { rows: paginatedStudents, pageSize, setPageSize, currentPage, setCurrentPage, startIndex } = useListPagination(filteredStudents, `${searchTerm}:${searchField}:${sortField}:${sortDirection}`);
 
 	return (
 		<div className={styles.container}>
@@ -819,6 +790,8 @@ export default function AdminStudentPage() {
 							</button>
 						</div>
 					</div>
+
+					<EntriesControl pageSize={pageSize} onChange={setPageSize} />
 
 					{isLoading ?
 						<p
@@ -1061,44 +1034,7 @@ export default function AdminStudentPage() {
 						</div>
 					}
 
-					<div className={styles.paginationFooter}>
-						<div className={styles.entriesText}>
-							{filteredStudents.length === 0 ?
-								'Showing 0 of 0 entries'
-							:	`Showing ${startIndex + 1}-${endIndex} of ${filteredStudents.length} entries`}
-						</div>
-
-						<div className={styles.paginationControls}>
-							<button
-								type='button'
-								className={styles.pageBtn}
-								onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-								disabled={currentPage === 1}
-								aria-label='Previous page'>
-								&lt;
-							</button>
-
-							{visiblePages.map((pageNumber) => (
-								<button
-									key={pageNumber}
-									type='button'
-									className={`${styles.pageBtn} ${currentPage === pageNumber ? styles.pageActive : ''}`}
-									onClick={() => setCurrentPage(pageNumber)}
-									aria-current={currentPage === pageNumber ? 'page' : undefined}>
-									{pageNumber}
-								</button>
-							))}
-
-							<button
-								type='button'
-								className={styles.pageBtn}
-								onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-								disabled={currentPage === totalPages || filteredStudents.length === 0}
-								aria-label='Next page'>
-								&gt;
-							</button>
-						</div>
-					</div>
+					<ListPagination total={filteredStudents.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>

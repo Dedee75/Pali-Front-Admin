@@ -14,6 +14,7 @@ import Sidebar from '../../../components/Sidebar';
 
 import MobileNavigation from '../../../components/MobileNavigation';
 
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './homework-list.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -1023,10 +1024,8 @@ function HomeworkListContent() {
 
                         \========================= */}
 
+                        <EntriesControl pageSize={pageSize} onChange={(size) => { setPageSize(size); setCurrentPage(1); }} />
                         <div className={styles.desktopHomeworkTable}>
-                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-                                <span>Show</span><select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} style={{height:36,padding:'0 10px'}}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select><span>entries</span>
-                            </div>
                             <div className={styles.tableContainer}>
 
                                 <table className={styles.table}>
@@ -1342,16 +1341,7 @@ function HomeworkListContent() {
 
                                 </table>
                             </div>
-                            {!loading && sortedData.length > 0 && (
-                                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,marginTop:14,flexWrap:'wrap'}}>
-                                    <span style={{fontSize:12,color:'#777'}}>Showing {pageStart + 1}-{pageEnd} of {sortedData.length} entries</span>
-                                    <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                                        <button type='button' className={styles.reviewBtn} disabled={safeCurrentPage === 1} onClick={() => setCurrentPage(p => Math.max(1,p-1))}>&lt;</button>
-                                        {Array.from({length: totalPages}, (_,i) => i+1).filter(p => p === 1 || p === totalPages || Math.abs(p-safeCurrentPage) <= 2).map((p,i,pages) => <span key={p} style={{display:'contents'}}>{i>0 && p-pages[i-1]>1 && <span>...</span>}<button type='button' className={styles.reviewBtn} onClick={() => setCurrentPage(p)} style={p===safeCurrentPage ? {background:'#c48a00',color:'#fff',borderColor:'#c48a00'} : undefined}>{p}</button></span>)}
-                                        <button type='button' className={styles.reviewBtn} disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages,p+1))}>&gt;</button>
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
 
                         {/* =========================
@@ -1621,6 +1611,7 @@ function HomeworkListContent() {
                             )}
 
                         </div>
+                        <ListPagination total={sortedData.length} pageSize={pageSize} currentPage={safeCurrentPage} onChange={setCurrentPage} />
 
                     </div>
 

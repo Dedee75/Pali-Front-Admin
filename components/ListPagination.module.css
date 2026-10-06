@@ -1,0 +1,11 @@
+.toolbar { display: flex; justify-content: flex-end; margin: 12px 0; }
+.entries { display: inline-flex; align-items: center; gap: 8px; color: #666; font-size: 12px; }
+.entries select { height: 34px; min-width: 66px; padding: 0 10px; border: 1px solid #ddd; border-radius: 7px; background: #fff; color: #444; font: inherit; cursor: pointer; }
+.footer { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-top: 14px; }
+.summary { color: #777; font-size: 11px; text-align: right; }
+.controls { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 5px; }
+.controls button { min-width: 28px; height: 28px; padding: 0 7px; border: 1px solid #e1e1e1; border-radius: 6px; background: #fff; color: #666; font: inherit; font-size: 11px; cursor: pointer; }
+.controls button:hover:not(:disabled) { border-color: #c48a00; background: #fff9e8; }
+.controls button[aria-current='page'] { border-color: #c48a00; background: #c48a00; color: #fff; }
+.controls button:disabled { opacity: .4; cursor: not-allowed; }
+.controls button:focus-visible, .entries select:focus-visible { outline: 2px solid #c48a00; outline-offset: 2px; }
