@@ -2388,6 +2388,37 @@
 
 /* Extra small phone */
 
+@media (max-width: 600px) {
+    .table th {
+        padding: 12px 4px;
+        font-size: 11px;
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-break: normal;
+        vertical-align: middle;
+    }
+
+    .table th:first-child .sortHeader {
+        white-space: normal;
+    }
+
+    .table th:nth-child(1),
+    .table td:nth-child(1) {
+        width: 22%;
+    }
+
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 14%;
+    }
+
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 32%;
+    }
+}
+
 @media (max-width: 380px) {
 
     .registrationToggleText {
