@@ -1,14 +1,15 @@
 /** @format */
 
 'use client';
+import { useServerPagination } from '../../../lib/server-pagination';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmAction } from '../../../lib/dialog';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
-import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './batches.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -63,7 +64,7 @@ function createDefaultForm(): BatchForm {
 export default function BatchesPage() {
 	const router = useRouter();
 
-	const [batches, setBatches] = useState<Batch[]>([]);
+	const [batchRows, setBatches] = useState<Batch[]>([]);
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 
 	const [formData, setFormData] = useState<BatchForm>(createDefaultForm);
@@ -78,6 +79,12 @@ export default function BatchesPage() {
 
 	const [error, setError] = useState('');
 	const [modalError, setModalError] = useState('');
+  const pager = useServerPagination({});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const batches = useMemo(() => pager.isCurrent ? batchRows : [], [pager.isCurrent, batchRows]);
+
+
+
 
 
 	const apiFetch = useCallback(
@@ -129,8 +136,9 @@ export default function BatchesPage() {
 		setError('');
 
 		try {
-			const batchResult = await apiFetch('/batches');
+			const batchResult = await apiFetch(`/batches?${pageQuery}`);
 
+			if (!acceptPage(batchResult, pageQuery)) return;
 			const batchList: Batch[] = Array.isArray(batchResult) ? batchResult : (batchResult?.data ?? []);
 
 			setBatches(batchList);
@@ -139,7 +147,7 @@ export default function BatchesPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [apiFetch]);
+	}, [apiFetch, pageQuery, acceptPage]);
 
 	useEffect(() => {
 		const storedUser = sessionStorage.getItem('user');
@@ -175,7 +183,8 @@ export default function BatchesPage() {
     </svg>
   `);
 
-	const { rows: paginatedBatches, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(batches, '');
+	const { pageSize, setPageSize, currentPage, setCurrentPage } = pager;
+ const paginatedBatches = batches;
 
 	const formatIdentity = (id: number) => `BAT-${String(id).padStart(4, '0')}`;
 
@@ -491,7 +500,7 @@ export default function BatchesPage() {
 						</table>
 					</div>
 
-					<ListPagination total={batches.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
+					<ListPagination total={pager.total} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>

@@ -1,13 +1,14 @@
 /** @format */
 
 'use client';
+import { useServerPagination } from '../../../lib/server-pagination';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, Suspense, useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
-import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './homework-list.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -19,14 +20,9 @@ type LoginUser = {
 	role: 'SUPER_ADMIN' | 'TEACHER';
 };
 
-type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
+type SubmissionStatus = 'PENDING' | 'PROCESSING' | 'SUBMITTED' | 'REVIEWED';
 
-type HomeworkImage = {
-	id: number;
-	image: string;
-	marks?: number | null;
-	remark?: string | null;
-};
+
 
 type Submission = {
 	id: number;
@@ -39,7 +35,7 @@ type Submission = {
 		name: string;
 		studentCode: string;
 	};
-	images: HomeworkImage[];
+ imageCount: number;
 	homework: {
 		id: number;
 		title: string;
@@ -71,7 +67,7 @@ function HomeworkListContent() {
 	const status = searchParams.get('status') ?? 'pending';
 
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
-	const [submissions, setSubmissions] = useState<Submission[]>([]);
+	const [submissionRows, setSubmissions] = useState<Submission[]>([]);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [searchBy, setSearchBy] = useState<'ALL' | 'ID' | 'NAME' | 'DATE' | 'STATUS'>('ALL');
 	const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUBMITTED' | 'REVIEWED'>(status === 'completed' ? 'REVIEWED' : status === 'all' ? 'ALL' : 'SUBMITTED');
@@ -79,6 +75,12 @@ function HomeworkListContent() {
 	const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+  const pager = useServerPagination({homeworkId, status: statusFilter === "ALL" ? "all" : statusFilter, search: searchTerm, searchBy, utcOffsetMinutes: searchBy === "DATE" && searchTerm ? -new Date(`${searchTerm}T00:00:00`).getTimezoneOffset() : undefined, sortBy: sortKey, sortDirection});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const submissions = useMemo(() => pager.isCurrent ? submissionRows : [], [pager.isCurrent, submissionRows]);
+
+
+
 
 	const apiFetch = useCallback(
 		async (endpoint: string) => {
@@ -138,15 +140,16 @@ function HomeworkListContent() {
 		setError('');
 
 		try {
-			const result = await apiFetch(`/homework-submissions/teacher/assigned?homeworkId=${homeworkId}&status=all`);
+			const result = await apiFetch(`/homework-submissions/teacher/assigned?${pageQuery}`);
 
-			setSubmissions(getArray<Submission>(result));
+			if (!acceptPage(result, pageQuery)) return;
+      setSubmissions(getArray<Submission>(result));
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load homework.');
 		} finally {
 			setLoading(false);
 		}
-	}, [apiFetch, homeworkId]);
+	}, [apiFetch, homeworkId, pageQuery, acceptPage]);
 
 	useEffect(() => {
 		const storedUser = sessionStorage.getItem('user');
@@ -171,39 +174,13 @@ function HomeworkListContent() {
 		}
 	}, [loadSubmissions, router]);
 
-    const filteredData = useMemo(() => {
-        const term = searchTerm.trim().toLowerCase();
-        return submissions.filter((submission, index) => {
-            if (statusFilter !== 'ALL' && submission.status !== statusFilter) return false;
-            if (!term) return true;
-            const date = submission.submittedAt ? new Date(submission.submittedAt) : null;
-            const validDate = date && !Number.isNaN(date.getTime());
-            const localDate = validDate ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
-            const ids = [submission.student.studentCode.toLowerCase(), String(submission.id), String(index + 1).padStart(2, '0')];
-            const name = submission.student.name.toLowerCase();
-            const dateText = validDate ? `${localDate} ${date.toLocaleDateString()}`.toLowerCase() : '';
-            const statusText = submission.status === 'REVIEWED' ? 'reviewed completed' : submission.status === 'PENDING' ? 'pending' : 'assigned submitted pending';
-            if (searchBy === 'ID') return ids.some(id => id.includes(term));
-            if (searchBy === 'NAME') return name.includes(term);
-            if (searchBy === 'DATE') return localDate === term;
-            if (searchBy === 'STATUS') return statusText.includes(term);
-            return ids.some(id => id.includes(term)) || name.includes(term) || dateText.includes(term) || statusText.includes(term);
-        });
-    }, [searchTerm, searchBy, statusFilter, submissions]);
-
-    const sortedData = [...filteredData].sort((first, second) => {
-        let comparison = first.id - second.id;
-        if (sortKey === 'DATE') comparison = (Date.parse(first.submittedAt ?? '') || 0) - (Date.parse(second.submittedAt ?? '') || 0);
-        if (sortKey === 'STUDENT') comparison = first.student.name.localeCompare(second.student.name, undefined, { numeric: true, sensitivity: 'base' });
-        if (sortKey === 'PAGES') comparison = (first.images?.length ?? 0) - (second.images?.length ?? 0);
-        if (sortKey === 'STATUS') comparison = first.status.localeCompare(second.status);
-        return sortDirection === 'asc' ? comparison : -comparison;
-    });
+    const filteredData = submissions;
     const handleSort = (key: typeof sortKey) => {
         setSortDirection(sortKey === key && sortDirection === 'asc' ? 'desc' : 'asc');
         setSortKey(key);
     };
-    const { rows: paginatedData, pageSize, setPageSize, currentPage, setCurrentPage, startIndex } = useListPagination(sortedData, `${homeworkId}:${statusFilter}:${searchBy}:${searchTerm}:${sortKey}:${sortDirection}`);
+    const paginatedData = submissions;
+    const {pageSize, setPageSize, currentPage, setCurrentPage, startIndex} = pager;
 
 	const title = submissions[0]?.homework.title ?? 'Assignment Details';
 
@@ -287,7 +264,7 @@ function HomeworkListContent() {
 						<div>
 							<h1 className={styles.pageTitle}>{batchName}</h1>
 							<p className={styles.pageSubtitle}>{title}</p>
-<p className={styles.summary}>Showing: {filteredData.length} • {statusFilter === 'ALL' ? 'All statuses' : statusFilter === 'REVIEWED' ? 'Reviewed' : 'Assigned'}</p>
+<p className={styles.summary}>Showing: {pager.total} • {statusFilter === 'ALL' ? 'All statuses' : statusFilter === 'REVIEWED' ? 'Reviewed' : 'Assigned'}</p>
 						</div>
 
 						<div className={styles.filters}>
@@ -388,8 +365,8 @@ function HomeworkListContent() {
 													<div className={styles.subText}>{submission.student.studentCode}</div>
 												</td>
 
-												<td data-label="Pages">{submission.images?.length ?? 0}</td>
-<td data-label="Status"><span className={submission.status === 'REVIEWED' ? styles.reviewedBadge : styles.assignedBadge}>{submission.status === 'REVIEWED' ? 'Reviewed' : 'Assigned'}</span></td>
+												<td data-label="Pages">{submission.imageCount ?? 0}</td>
+<td data-label="Status"><span className={submission.status === 'REVIEWED' ? styles.reviewedBadge : styles.assignedBadge}>{submission.status === 'REVIEWED' ? 'Reviewed' : submission.status === 'PROCESSING' ? 'Processing' : 'Assigned'}</span></td>
 
 												<td>
 													<button
@@ -422,7 +399,7 @@ function HomeworkListContent() {
 							</tbody>
 						</table>
 					</div>
-					<ListPagination total={filteredData.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
+					<ListPagination total={pager.total} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 				</div>
 <footer className={styles.footer}>O-Technique-Myanmar-2026@</footer>
 </main>

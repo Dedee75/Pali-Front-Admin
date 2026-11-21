@@ -1,5 +1,7 @@
 "use client";
 
+import { authClientHeaders } from '@/lib/auth-client';
+
 import {
   FormEvent,
   useState,
@@ -50,6 +52,7 @@ export default function AdminLoginPage() {
 
           headers: {
             "Content-Type": "application/json",
+            ...authClientHeaders(),
           },
 
           body: JSON.stringify({

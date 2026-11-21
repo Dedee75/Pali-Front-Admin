@@ -2,6 +2,8 @@
 
 'use client';
 
+import { PrivateImage, PrivateFileLink } from '@/lib/private-files';
+
 import {
 	Suspense,
 	useCallback,
@@ -842,7 +844,7 @@ function HomeworkDetailsContent({
 						styles.navRight
 					}
 				>
-					<img
+					<PrivateImage
 						src={
 							DEFAULT_AVATAR
 						}
@@ -1054,7 +1056,7 @@ function HomeworkDetailsContent({
 														disabled={isMobileView}
 														title={isMobileView ? undefined : 'Click to enlarge image'}
 													>
-														<img
+														<PrivateImage
 															src={getImageUrl(
 																image.image,
 															)}
@@ -1359,7 +1361,7 @@ function HomeworkDetailsContent({
 									{submission
 										.homework
 										.attachment && (
-										<a
+										<PrivateFileLink
 											className={
 												styles.attachmentLink
 											}
@@ -1376,7 +1378,7 @@ function HomeworkDetailsContent({
 												.homework
 												.attachmentName ||
 												'Homework attachment'}
-										</a>
+										</PrivateFileLink>
 									)}
 								</div>
 
@@ -1520,7 +1522,7 @@ function HomeworkDetailsContent({
 							event.stopPropagation()
 						}
 					>
-						<img
+						<PrivateImage
 							src={
 								previewImage.url
 							}

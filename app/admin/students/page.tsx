@@ -1,8 +1,11 @@
 /** @format */
 
 'use client';
+import { useServerPagination, loadOptions } from '../../../lib/server-pagination';
 
-import { useEffect, useState } from 'react';
+import { PrivateImage } from '@/lib/private-files';
+
+import { useMemo, useCallback, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +15,7 @@ import Sidebar from '../../../components/Sidebar';
 
 import MobileNavigation from '../../../components/MobileNavigation';
 
-import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './student.module.css';
 
 // Backend Student API
@@ -172,7 +175,7 @@ export default function AdminStudentPage() {
 
 	// --- STATE MANAGEMENT ---
 
-	const [students, setStudents] = useState<StudentData[]>([]);
+	const [studentRows, setStudents] = useState<StudentData[]>([]);
 
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -180,6 +183,12 @@ export default function AdminStudentPage() {
 	const [searchField, setSearchField] = useState<StudentField>('name');
 	const [sortField, setSortField] = useState<StudentField>('displayId');
 	const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const pager = useServerPagination({search: searchTerm, searchBy: searchField, sortBy: sortField, sortDirection});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const students = useMemo(() => pager.isCurrent ? studentRows : [], [pager.isCurrent, studentRows]);
+
+
+
 	const [batches, setBatches] = useState<BackendBatch[]>([]);
 	const [batchesLoading, setBatchesLoading] = useState(true);
 
@@ -229,11 +238,11 @@ export default function AdminStudentPage() {
 
 	// --- 1. FETCH DATA (READ) ---
 
-	const fetchStudents = async () => {
+	const fetchStudents = useCallback(async () => {
 		try {
 			setIsLoading(true);
 
-			const res = await fetch(API_URL, {
+			const res = await fetch(`${API_URL}?${pageQuery}`, {
 				method: 'GET',
 
 				headers: {
@@ -251,7 +260,9 @@ export default function AdminStudentPage() {
 				throw new Error(getErrorMessage(payload, 'Failed to fetch students.'));
 			}
 
-			const data: BackendStudent[] = Array.isArray(payload) ? payload : [];
+			const result = payload as {data: BackendStudent[]; meta: {total: number; page: number; limit: number; totalPages: number}};
+      if (!acceptPage(result, pageQuery)) return;
+      const data = result.data;
 
 			const formatted: StudentData[] = data.map((item) => ({
 				id: String(item.id),
@@ -277,14 +288,6 @@ export default function AdminStudentPage() {
 				imageUrl: resolveImageUrl(item.image),
 			}));
 
-			formatted.sort((firstStudent, secondStudent) =>
-				firstStudent.displayId.localeCompare(secondStudent.displayId, undefined, {
-					numeric: true,
-
-					sensitivity: 'base',
-				}),
-			);
-
 			setStudents(formatted);
 		} catch (error) {
 			console.error('Error fetching students:', error);
@@ -293,18 +296,18 @@ export default function AdminStudentPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [pageQuery, acceptPage]);
 
 	const fetchBatches = async () => {
 		try {
 			setBatchesLoading(true);
-			const response = await fetch(`${API_BASE_URL}/batches`, {
-				headers: { Accept: 'application/json', ...getAuthHeaders() },
-				cache: 'no-store',
-			});
-			const result: unknown = await response.json().catch(() => null);
-			if (!response.ok) throw new Error(getErrorMessage(result, 'Failed to load batches.'));
-			setBatches(Array.isArray(result) ? result : []);
+			const options = await loadOptions<BackendBatch>(async endpoint => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {headers: {Accept: 'application/json', ...getAuthHeaders()}, cache: 'no-store'});
+        const result = await response.json();
+        if (!response.ok) throw new Error(getErrorMessage(result, 'Failed to load batches.'));
+        return result;
+      }, '/batches');
+      setBatches(options);
 		} catch (error) {
 			void showMessage(error instanceof Error ? error.message : 'Failed to load batches.');
 		} finally {
@@ -388,7 +391,7 @@ export default function AdminStudentPage() {
 
 			setCurrentUser(resolvedUser);
 
-			void Promise.all([fetchStudents(), fetchRegistrationSetting(), fetchBatches()]);
+			void Promise.all([fetchRegistrationSetting(), fetchBatches()]);
 		} catch {
 			sessionStorage.removeItem('user');
 
@@ -397,6 +400,10 @@ export default function AdminStudentPage() {
 			router.replace('/');
 		}
 	}, []);
+
+  useEffect(() => {
+    if (currentUser?.role === 'SUPER_ADMIN') void fetchStudents();
+  }, [currentUser, fetchStudents]);
 
 	// --- HANDLERS ---
 
@@ -650,21 +657,8 @@ export default function AdminStudentPage() {
 		setCurrentPage(1);
 	};
 
-	const query = searchTerm.trim().toLocaleLowerCase();
-	const filteredStudents = students
-		.filter((student) => {
-			return student[searchField].toLocaleLowerCase().includes(query);
-		})
-		.sort((first, second) => {
-			const comparison =
-				sortField === 'dob' ?
-					Number(first.dob) - Number(second.dob)
-				:	first[sortField].localeCompare(second[sortField], undefined, { numeric: true, sensitivity: 'base' });
-			const result = comparison || first.displayId.localeCompare(second.displayId, undefined, { numeric: true });
-			return sortDirection === 'asc' ? result : -result;
-		});
-
-	const { rows: paginatedStudents, pageSize, setPageSize, currentPage, setCurrentPage, startIndex } = useListPagination(filteredStudents, `${searchTerm}:${searchField}:${sortField}:${sortDirection}`);
+  const paginatedStudents = students;
+  const {pageSize, setPageSize, currentPage, setCurrentPage, startIndex} = pager;
 
 	return (
 		<div className={styles.container}>
@@ -678,7 +672,7 @@ export default function AdminStudentPage() {
 				</div>
 
 				<div className={styles.navRight}>
-					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
+					<PrivateImage src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
 
 					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
 
@@ -942,7 +936,7 @@ export default function AdminStudentPage() {
 												<td className={styles.boldText}>{student.displayId}</td>
 
 												<td>
-													<img
+													<PrivateImage
 														src={student.imageUrl}
 														alt={student.name}
 														className={styles.tableAvatar}
@@ -1034,7 +1028,7 @@ export default function AdminStudentPage() {
 						</div>
 					}
 
-					<ListPagination total={filteredStudents.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
+					<ListPagination total={pager.total} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>
@@ -1064,7 +1058,7 @@ export default function AdminStudentPage() {
 
 						<form onSubmit={handleSubmit} className={styles.formBody}>
 							<div className={styles.profileImgContainer}>
-								<img
+								<PrivateImage
 									src={imagePreviewUrl || formData.image || DEFAULT_AVATAR}
 									alt='Profile'
 									className={styles.formProfileImg}

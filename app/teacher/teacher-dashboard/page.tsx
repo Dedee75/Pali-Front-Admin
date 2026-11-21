@@ -1,6 +1,8 @@
 /** @format */
 
 'use client';
+import { useServerPagination, loadOptions } from '../../../lib/server-pagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -48,10 +50,17 @@ export default function TeacherDashboardPage() {
 	const router = useRouter();
 
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
-	const [assignments, setAssignments] = useState<HomeworkSummary[]>([]);
+	const [assignmentRows, setAssignments] = useState<HomeworkSummary[]>([]);
 	const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+  const pager = useServerPagination({batchId: selectedBatch});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const assignments = useMemo(() => pager.isCurrent ? assignmentRows : [], [pager.isCurrent, assignmentRows]);
+
+
+  const [batchOptions, setBatchOptions] = useState<{id: number; name: string; stats: {homeworkCount: number; hasPending: boolean}}[]>([]);
+
 
 	const apiFetch = useCallback(
 		async (endpoint: string) => {
@@ -98,14 +107,19 @@ export default function TeacherDashboardPage() {
 		setError('');
 
 		try {
-			const result = await apiFetch('/homework-submissions/teacher/dashboard');
-			setAssignments(getArray<HomeworkSummary>(result));
+			const [result, options] = await Promise.all([
+        apiFetch(`/homework-submissions/teacher/dashboard?${pageQuery}`),
+        loadOptions<{id: number; name: string; stats: {homeworkCount: number; hasPending: boolean}}>(apiFetch, '/batches'),
+      ]);
+			if (!acceptPage(result, pageQuery)) return;
+      setAssignments(getArray<HomeworkSummary>(result));
+      setBatchOptions(options);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load dashboard.');
 		} finally {
 			setLoading(false);
 		}
-	}, [apiFetch]);
+	}, [apiFetch, pageQuery, acceptPage]);
 
 	useEffect(() => {
 		const storedUser = sessionStorage.getItem('user');
@@ -166,8 +180,8 @@ export default function TeacherDashboardPage() {
 		}));
 	}, [assignments]);
 
-	const allHomeworkCount = assignments.length;
-	const hasAnyPending = assignments.some((assignment) => assignment.pendingCount > 0);
+	const allHomeworkCount = batchOptions.reduce((sum, batch) => sum + batch.stats.homeworkCount, 0);
+	const hasAnyPending = batchOptions.some(batch => batch.stats.hasPending);
 
 	const openHomework = (assignment: HomeworkSummary) => {
 		const status = assignment.pendingCount > 0 ? 'pending' : 'completed';
@@ -219,7 +233,7 @@ export default function TeacherDashboardPage() {
 					<div className={styles.contentHeader}>
 						<div>
 							<h1 className={styles.pageTitle}>Homework</h1>
-							<p className={styles.pageSubtitle}>Only homework assigned to your account is shown.</p>
+							<p className={styles.pageSubtitle}>Only homework assigned to your account is shown. Batch filters apply across all pages.</p>
 						</div>
 					</div>
 
@@ -247,7 +261,7 @@ export default function TeacherDashboardPage() {
 							)}
 						</button>
 
-						{groupedAssignments.map((group) => (
+						{batchOptions.map(option => ({batchId: option.id, batchName: option.name, homeworkCount: option.stats.homeworkCount, hasPending: option.stats.hasPending})).map((group) => (
 							<button
 								type='button'
 								key={group.batchId}
@@ -263,6 +277,8 @@ export default function TeacherDashboardPage() {
 							</button>
 						))}
 					</nav>
+
+					<EntriesControl pageSize={pager.pageSize} onChange={pager.setPageSize} />
 
 					<div className={styles.scrollContainer}>
 						{loading && <div style={{ padding: '40px', textAlign: 'center' }}>Loading assigned homework...</div>}
@@ -335,6 +351,8 @@ export default function TeacherDashboardPage() {
 							</div>
 						)}
 					</div>
+
+					<ListPagination total={pager.total} pageSize={pager.pageSize} currentPage={pager.currentPage} onChange={pager.setCurrentPage} />
 
 					<footer className={styles.footer}>O-Technique-Myanmar-2026@</footer>
 				</main>

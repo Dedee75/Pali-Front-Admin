@@ -1,15 +1,16 @@
 /** @format */
 
 'use client';
+import { useServerPagination } from '../../../lib/server-pagination';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 
 import { useRouter } from 'next/navigation';
 import { confirmAction } from '../../../lib/dialog';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
-import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './admin.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -53,7 +54,7 @@ const defaultForm: UserForm = {
 export default function AdminPage() {
 	const router = useRouter();
 
-	const [users, setUsers] = useState<User[]>([]);
+	const [userRows, setUsers] = useState<User[]>([]);
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 
 	const [formData, setFormData] = useState<UserForm>(defaultForm);
@@ -69,6 +70,12 @@ export default function AdminPage() {
 	const [saving, setSaving] = useState(false);
 
 	const [error, setError] = useState('');
+  const pager = useServerPagination({});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const users = useMemo(() => pager.isCurrent ? userRows : [], [pager.isCurrent, userRows]);
+
+
+
 
 	// =========================================
 	// Authenticated API Request
@@ -123,8 +130,9 @@ export default function AdminPage() {
 		setError('');
 
 		try {
-			const result = await apiFetch('/users');
+			const result = await apiFetch(`/users?${pageQuery}`);
 
+			if (!acceptPage(result, pageQuery)) return;
 			const userList = Array.isArray(result) ? result : (result?.data ?? []);
 
 			setUsers(userList);
@@ -133,7 +141,7 @@ export default function AdminPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [apiFetch]);
+	}, [apiFetch, pageQuery, acceptPage]);
 
 	// =========================================
 	// Initial Load
@@ -322,7 +330,8 @@ export default function AdminPage() {
 			.toUpperCase();
 	};
 
-	const { rows: paginatedUsers, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(users);
+	const { pageSize, setPageSize, currentPage, setCurrentPage } = pager;
+ const paginatedUsers = users;
 
 	return (
 		<div className={styles.container}>
@@ -525,7 +534,7 @@ export default function AdminPage() {
 						</table>
 					</div>
 
-					<ListPagination total={users.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
+					<ListPagination total={pager.total} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>
 			</div>

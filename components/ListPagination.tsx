@@ -24,10 +24,12 @@ export function useListPagination<T>(items: T[], resetKey = '') {
 
 export function EntriesControl({ pageSize, onChange }: { pageSize: number; onChange: (size: number) => void }) {
     return <div className={styles.toolbar}>
-        <label className={styles.entries}>Show
+        <label className={styles.entries}>
+            <span>Show</span>
             <select aria-label='Entries per page' value={pageSize} onChange={event => onChange(Number(event.target.value))}>
                 {[10, 25, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
-            </select>entries
+            </select>
+            <span>entries</span>
         </label>
     </div>;
 }

@@ -1,6 +1,10 @@
 /** @format */
 
 'use client';
+import { useServerPagination, loadOptions } from '../../../lib/server-pagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
+
+import { PrivateImage, PrivateFileLink } from '@/lib/private-files';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -41,6 +45,7 @@ type LoginUser = {
 };
 
 type Batch = {
+ stats?: {homeworkCount: number; openHomeworkCount: number; hasPending: boolean};
 
     id: number;
 
@@ -75,6 +80,7 @@ type HomeworkSubmissionSummary = {
 };
 
 type Homework = {
+ counts?: {totalStudents: number; notSubmitted: number; waitingCheck: number; checked: number};
 
     attachment?: string | null;
 
@@ -202,7 +208,7 @@ export default function AdminHomeworkPage() {
 
     const restorePosition = useRef<{ main: number; cards: number } | null>(null);
 
-    const [homeworks, setHomeworks] = useState<Homework[]>([]);
+    const [homeworkRows, setHomeworks] = useState<Homework[]>([]);
 
     const [batches, setBatches] = useState<Batch[]>([]);
 
@@ -211,6 +217,12 @@ export default function AdminHomeworkPage() {
     const [selectedBatchId, setSelectedBatchId] =
 
         useState<number | 'all'>('all');
+ const pager = useServerPagination({batchId: selectedBatchId === 'all' ? undefined : selectedBatchId});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const homeworks = useMemo(() => pager.isCurrent ? homeworkRows : [], [pager.isCurrent, homeworkRows]);
+
+
+
 
     const [currentUser, setCurrentUser] =
 
@@ -420,93 +432,13 @@ export default function AdminHomeworkPage() {
 
             try {
 
-                const [
-
-                    homeworkResult,
-
-                    batchResult,
-
-                    submissionResult,
-
-                ] = await Promise.all([
-
-                    apiFetch('/homeworks'),
-
-                    apiFetch('/batches'),
-
-                    apiFetch(
-
-                        '/homework-submissions',
-
-                    ),
-
+                const [homeworkResult, batchList] = await Promise.all([
+                  apiFetch(`/homeworks?${pageQuery}`),
+                  loadOptions<Batch>(apiFetch, '/batches'),
                 ]);
-
-                const homeworkList =
-
-                    getArray<Homework>(
-
-                        homeworkResult,
-
-                    );
-
-                const submissionList =
-
-                    getArray<HomeworkSubmissionSummary>(
-
-                        submissionResult,
-
-                    );
-
-                const mergedHomeworks =
-
-                    homeworkList.map(
-
-                        (homework) => ({
-
-                            ...homework,
-
-                            submissions:
-
-                                submissionList.filter(
-
-                                    (
-
-                                        submission,
-
-                                    ) =>
-
-                                        submission.homeworkId ===
-
-                                        homework.id,
-
-                                ),
-
-                        }),
-
-                    );
-
-                setHomeworks(
-
-                    mergedHomeworks,
-
-                );
-
-                setBatches(
-
-                    getArray<Batch>(
-
-                        batchResult,
-
-                    ).filter(
-
-                        (batch) =>
-
-                            batch.status,
-
-                    ),
-
-                );
+                if (!acceptPage(homeworkResult, pageQuery)) return;
+                setHomeworks(getArray<Homework>(homeworkResult));
+                setBatches(batchList.filter(batch => batch.status));
 
             } catch (err) {
 
@@ -532,7 +464,7 @@ export default function AdminHomeworkPage() {
 
         },
 
-        [apiFetch],
+        [apiFetch, pageQuery, acceptPage],
 
     );
 
@@ -788,131 +720,14 @@ export default function AdminHomeworkPage() {
 
        ========================= */
 
-    const getOpenHomeworkCount = (items: Homework[]) =>
-        items.filter((homework) => !isHomeworkClosed(homework.dueDate)).length;
-
-    const getBatchTabInfo = (batchId: number) => {
-
-        const batchHomeworks = homeworks.filter(
-
-            (homework) => homework.batchId === batchId,
-
-        );
-
-        return {
-
-            homeworkCount: batchHomeworks.length,
-
-            openHomeworkCount: getOpenHomeworkCount(batchHomeworks),
-
-            hasPending: batchHomeworks.some((homework) =>
-
-                (homework.submissions ?? []).some(
-
-                    (submission) => submission.status === 'SUBMITTED',
-
-                ),
-
-            ),
-
-        };
-
-    };
-
-    const allHomeworkCount = homeworks.length;
-
-    const allOpenHomeworkCount = getOpenHomeworkCount(homeworks);
-
-    const hasAnyPending = homeworks.some((homework) =>
-
-        (homework.submissions ?? []).some(
-
-            (submission) => submission.status === 'SUBMITTED',
-
-        ),
-
-    );
-
-    /* =========================
-
-       COUNTS
-
-       ========================= */
-
-    const getCounts = (
-
-        homework: Homework,
-
-    ) => {
-
-        const submissions =
-
-            homework.submissions ?? [];
-
-        const totalStudents =
-
-            submissions.length;
-
-        const notSubmitted =
-
-            submissions.filter(
-
-                (submission) =>
-
-                    submission.status ===
-
-                    'PENDING',
-
-            ).length;
-
-        const waitingCheck =
-
-            submissions.filter(
-
-                (submission) =>
-
-                    submission.status ===
-
-                    'SUBMITTED',
-
-            ).length;
-
-        const checked =
-
-            submissions.filter(
-
-                (submission) =>
-
-                    submission.status ===
-
-                    'REVIEWED',
-
-            ).length;
-
-        const uploaded =
-
-            waitingCheck + checked;
-
-        return {
-
-            totalStudents,
-
-            notSubmitted,
-
-            uploaded,
-
-            waitingCheck,
-
-            checked,
-
-            allUploadedReviewed:
-
-                uploaded > 0 &&
-
-                waitingCheck === 0,
-
-        };
-
+    const getBatchTabInfo = (batchId: number) => batches.find(batch => batch.id === batchId)?.stats ?? {homeworkCount: 0, openHomeworkCount: 0, hasPending: false};
+    const allHomeworkCount = batches.reduce((sum, batch) => sum + (batch.stats?.homeworkCount ?? 0), 0);
+    const allOpenHomeworkCount = batches.reduce((sum, batch) => sum + (batch.stats?.openHomeworkCount ?? 0), 0);
+    const hasAnyPending = batches.some(batch => batch.stats?.hasPending);
+    const getCounts = (homework: Homework) => {
+      const counts = homework.counts ?? {totalStudents: 0, notSubmitted: 0, waitingCheck: 0, checked: 0};
+      const uploaded = counts.waitingCheck + counts.checked;
+      return {...counts, uploaded, allUploadedReviewed: uploaded > 0 && counts.waitingCheck === 0};
     };
 
     const formatDate = (
@@ -1537,7 +1352,7 @@ export default function AdminHomeworkPage() {
 
                 <div className={styles.navRight}>
 
-                    <img
+                    <PrivateImage
 
                         src={DEFAULT_AVATAR}
 
@@ -1828,6 +1643,8 @@ export default function AdminHomeworkPage() {
                         </div>
 
                     )}
+
+                  <EntriesControl pageSize={pager.pageSize} onChange={pager.setPageSize} />
 
                     {/* =========================
 
@@ -2634,6 +2451,8 @@ export default function AdminHomeworkPage() {
                     </div>
 
 
+                  <ListPagination total={pager.total} pageSize={pager.pageSize} currentPage={pager.currentPage} onChange={pager.setCurrentPage} />
+
                     <div
 
                         className={
@@ -2978,7 +2797,7 @@ export default function AdminHomeworkPage() {
 
                                 )?.attachment && (
 
-                                    <a
+                                    <PrivateFileLink
 
                                         className={
 
@@ -3014,7 +2833,7 @@ export default function AdminHomeworkPage() {
 
                                         attachment
 
-                                    </a>
+                                    </PrivateFileLink>
 
                                 )}
 

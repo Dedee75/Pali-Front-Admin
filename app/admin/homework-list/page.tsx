@@ -1,6 +1,7 @@
 /** @format */
 
 'use client';
+import { useServerPagination, loadOptions, mergeSelection } from '../../../lib/server-pagination';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -45,19 +46,9 @@ type Teacher = {
 
 };
 
-type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
+type SubmissionStatus = 'PENDING' | 'PROCESSING' | 'SUBMITTED' | 'REVIEWED';
 
-type HomeworkImage = {
 
-    id: number;
-
-    image: string;
-
-    marks?: number | null;
-
-    remark?: string | null;
-
-};
 
 type Reviewer = {
 
@@ -93,7 +84,7 @@ type Submission = {
 
     };
 
-    images: HomeworkImage[];
+ imageCount: number;
 
     reviewer?: Reviewer | null;
 
@@ -181,7 +172,7 @@ function HomeworkListContent() {
 
     const [homework, setHomework] = useState<Homework | null>(null);
 
-    const [submissions, setSubmissions] = useState<Submission[]>([]);
+    const [submissionRows, setSubmissions] = useState<Submission[]>([]);
 
     const [teachers, setTeachers] = useState<Teacher[]>([]);
 
@@ -189,10 +180,29 @@ function HomeworkListContent() {
     const [filterBy, setFilterBy] = useState<'ALL' | 'STUDENT' | 'TEACHER' | 'UNASSIGNED'>('ALL');
     const [sortKey, setSortKey] = useState<'ID' | 'DATE' | 'STUDENT' | 'PAGES' | 'TEACHER' | 'STATUS'>('ID');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [pageSize, setPageSize] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
+    const pager = useServerPagination({homeworkId, filterBy, search: searchTerm, sortBy: sortKey, sortDirection});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const submissions = useMemo(() => pager.isCurrent ? submissionRows : [], [pager.isCurrent, submissionRows]);
 
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const {pageSize, setPageSize, currentPage, setCurrentPage} = pager;
+    const [summary, setSummary] = useState({ready: 0, reviewed: 0});
+
+
+    const selectionParams = new URLSearchParams(pageQuery);
+    selectionParams.delete('page'); selectionParams.delete('limit');
+    const selectionScope = selectionParams.toString();
+    type SelectionRow = Pick<Submission, 'id' | 'status' | 'reviewerId'>;
+    const [selection, setSelection] = useState<{key: string; rows: SelectionRow[]}>({key: selectionScope, rows: []});
+    if (selection.key !== selectionScope) setSelection({key: selectionScope, rows: []});
+    const selectedRows = useMemo(() => selection.key === selectionScope ? selection.rows : [], [selection, selectionScope]);
+    const selectedIds = useMemo(() => selectedRows.map(row => row.id), [selectedRows]);
+    const setSelectedIds = (value: number[] | ((previous: number[]) => number[])) => setSelection(previous => {
+      const rows = previous.key === selectionScope ? previous.rows : [];
+      const ids = typeof value === 'function' ? value(rows.map(row => row.id)) : value;
+      return {key: selectionScope, rows: mergeSelection<SelectionRow>(rows, submissions, ids)};
+    });
+    const [selecting, setSelecting] = useState(false);
 
     const [selectedTeacherId, setSelectedTeacherId] = useState('');
 
@@ -316,19 +326,21 @@ function HomeworkListContent() {
 
                     apiFetch(`/homeworks/${homeworkId}`),
 
-                    apiFetch(`/homework-submissions?homeworkId=${homeworkId}`),
+                    apiFetch(`/homework-submissions?${pageQuery}`),
 
-                    apiFetch('/users'),
+                    loadOptions<Teacher>(apiFetch, '/users/teachers'),
 
                 ]);
 
+                if (!acceptPage(submissionResult, pageQuery)) return;
+                setSummary(submissionResult.summary);
                 setHomework(homeworkResult?.data ?? homeworkResult);
 
                 const allSubmissions = getArray<Submission>(submissionResult);
 
                 setSubmissions(allSubmissions.filter((item) => item.homeworkId === homeworkId));
 
-                setTeachers(getArray<Teacher>(userResult).filter((user) => user.role === 'TEACHER' && user.isActive !== false));
+                setTeachers(userResult);
 
             } catch (err) {
 
@@ -346,7 +358,7 @@ function HomeworkListContent() {
 
         },
 
-        [apiFetch, homeworkId],
+        [apiFetch, homeworkId, pageQuery, acceptPage],
 
     );
 
@@ -402,45 +414,10 @@ function HomeworkListContent() {
 
        ========================= */
 
-    const filteredData = useMemo(() => {
-        const term = searchTerm.trim().toLowerCase();
-        return submissions.filter((submission) => {
-            const studentName = submission.student?.name?.toLowerCase() ?? '';
-            const studentCode = submission.student?.studentCode?.toLowerCase() ?? '';
-            const teacherName = submission.reviewer?.name?.toLowerCase() ?? '';
-            const unassigned = !submission.reviewerId && !submission.reviewer;
-            if (filterBy === 'UNASSIGNED') return unassigned && (!term || studentName.includes(term) || studentCode.includes(term));
-            if (!term) return true;
-            if (filterBy === 'STUDENT') return studentName.includes(term) || studentCode.includes(term);
-            if (filterBy === 'TEACHER') return teacherName.includes(term);
-            return studentName.includes(term) || studentCode.includes(term) || teacherName.includes(term);
-        });
-    }, [filterBy, searchTerm, submissions]);
-
-    const sortedData = useMemo(() => {
-        const data = [...filteredData];
-        const statusValue = (item: Submission) => item.status === 'PENDING' ? 0 : item.status === 'REVIEWED' ? 3 : (item.reviewerId || item.reviewer) ? 2 : 1;
-        data.sort((a, b) => {
-            let value = 0;
-            if (sortKey === 'ID') value = submissions.indexOf(a) - submissions.indexOf(b);
-            if (sortKey === 'DATE') value = new Date(a.submittedAt ?? 0).getTime() - new Date(b.submittedAt ?? 0).getTime();
-            if (sortKey === 'STUDENT') value = (a.student?.name ?? '').localeCompare(b.student?.name ?? '');
-            if (sortKey === 'PAGES') value = (a.images?.length ?? 0) - (b.images?.length ?? 0);
-            if (sortKey === 'TEACHER') value = (a.reviewer?.name ?? '').localeCompare(b.reviewer?.name ?? '');
-            if (sortKey === 'STATUS') value = statusValue(a) - statusValue(b);
-            return sortDirection === 'asc' ? value : -value;
-        });
-        return data;
-    }, [filteredData, sortDirection, sortKey, submissions]);
-
-    const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
-    const safeCurrentPage = Math.min(currentPage, totalPages);
-    const pageStart = (safeCurrentPage - 1) * pageSize;
-    const pageEnd = Math.min(pageStart + pageSize, sortedData.length);
-    const paginatedData = sortedData.slice(pageStart, pageEnd);
-
-    useEffect(() => { setCurrentPage(1); }, [filterBy, searchTerm, pageSize]);
-    useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
+    const sortedData = submissions;
+    const safeCurrentPage = currentPage;
+    const pageStart = pager.startIndex;
+    const paginatedData = submissions;
 
     const handleSort = (key: typeof sortKey) => {
         if (sortKey === key) setSortDirection((d) => d === 'asc' ? 'desc' : 'asc');
@@ -457,7 +434,7 @@ function HomeworkListContent() {
 
     const toggleSelect = (submission: Submission) => {
 
-        if (assigning || submission.status === 'PENDING') {
+        if (assigning || selecting || !['SUBMITTED', 'REVIEWED'].includes(submission.status)) {
 
             return;
 
@@ -489,42 +466,21 @@ function HomeworkListContent() {
         setAssignError('');
     };
 
-    const handleSelectRange = () => {
-
-        if (assigning) return;
-
-        const from = Number(rangeFrom);
-
-        const to = Number(rangeTo);
-
-        if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < from) {
-
-            setAssignError('Enter a valid list ID range.');
-
-            return;
-
-        }
-
-        // Match the visible row numbering, including both range endpoints.
-
-        const ids = sortedData
-
-            .filter((submission, index) => index + 1 >= from && index + 1 <= to && submission.status !== 'PENDING')
-
-            .map((submission) => submission.id);
-
-        setSelectedIds(ids);
-
-        if (ids.length === 0) {
-
-            setAssignError(`No selectable rows found from ${from} to ${to}.`);
-
-        } else {
-
-            setAssignError('');
-
-        }
-
+    const handleSelectRange = async () => {
+      if (assigning || selecting) return;
+      const from = Number(rangeFrom), to = Number(rangeTo);
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < from || to - from + 1 > 500) {
+        setAssignError('Enter a valid inclusive row range of up to 500 rows.'); return;
+      }
+      setSelecting(true); setAssignError('');
+      try {
+        const result = await apiFetch(`/homework-submissions/selection?${selectionScope}&from=${from}&to=${to}`);
+        if (!pager.isLatest(pageQuery)) return;
+        setSelection({key: selectionScope, rows: result.data as SelectionRow[]});
+        if (result.data.length === 0) setAssignError(`No selectable rows found from ${from} to ${to}.`);
+      } catch (error) {
+        if (pager.isLatest(pageQuery)) setAssignError(error instanceof Error ? error.message : 'Unable to select the range');
+      } finally {setSelecting(false);}
     };
 
     /* =========================
@@ -533,29 +489,23 @@ function HomeworkListContent() {
 
        \========================= */
 
-    const selectedSubmissions = useMemo(
+    const selectedSubmissions = selectedRows;
 
-        () => submissions.filter((submission) => selectedIds.includes(submission.id)),
+    const hasAssignedSelected = selectedSubmissions.some((submission) => Boolean(submission.reviewerId));
 
-        [submissions, selectedIds],
-
-    );
-
-    const hasAssignedSelected = selectedSubmissions.some((submission) => Boolean(submission.reviewerId || submission.reviewer));
-
-    const hasUnassignedSelected = selectedSubmissions.some((submission) => !submission.reviewerId && !submission.reviewer);
+    const hasUnassignedSelected = selectedSubmissions.some((submission) => !submission.reviewerId);
 
     const mixedSelection = hasAssignedSelected && hasUnassignedSelected;
 
     const selectedAssignedIds = selectedSubmissions
 
-        .filter((submission) => Boolean(submission.reviewerId || submission.reviewer))
+        .filter((submission) => Boolean(submission.reviewerId))
 
         .map((submission) => submission.id);
 
     const handleUnassign = async (ids: number[]) => {
 
-        if (assigning || !ids.length) return;
+        if (assigning || selecting || !ids.length) return;
 
         setAssigning(true);
 
@@ -596,6 +546,7 @@ function HomeworkListContent() {
        \========================= */
 
     const handleAssignTeacher = async () => {
+        if (selecting) return;
 
         if (!selectedIds.length) {
 
@@ -746,6 +697,7 @@ function HomeworkListContent() {
        \========================= */
 
     const getStatus = (submission: Submission) => {
+        if (submission.status === 'PROCESSING') return 'Processing';
 
         if (submission.status === 'REVIEWED') {
 
@@ -775,9 +727,7 @@ function HomeworkListContent() {
 
        \========================= */
 
-    const readyCount = submissions.filter((item) => item.status === 'SUBMITTED' && !item.reviewerId && !item.reviewer).length;
 
-    const reviewedCount = submissions.filter((item) => item.status === 'REVIEWED').length;
 
     /* =========================
 
@@ -905,15 +855,15 @@ function HomeworkListContent() {
 
                                 <p className={styles.summary}>
 
-                                    Total: {submissions.length}
+                                    Total: {pager.total}
 
                                     {' • '}
 
-                                    Ready: {readyCount}
+                                    Ready: {summary.ready}
 
                                     {' • '}
 
-                                    Reviewed: {reviewedCount}
+                                    Reviewed: {summary.reviewed}
 
                                 </p>
 
@@ -1016,6 +966,7 @@ function HomeworkListContent() {
 
                         </div>
 
+                        {selecting && <p role='status'>ရွေးချယ်မည့် စာရင်းကို ရယူနေပါသည်…</p>}
                         {(error || assignError) && <div className={styles.errorMessage}>{error || assignError}</div>}
 
                         {/* =========================
@@ -1024,6 +975,7 @@ function HomeworkListContent() {
 
                         \========================= */}
 
+                        <p>Select this page, or select an inclusive row range across pages (up to 500 rows). Selections stay selected when changing pages.</p>
                         <EntriesControl pageSize={pageSize} onChange={(size) => { setPageSize(size); setCurrentPage(1); }} />
                         <div className={styles.desktopHomeworkTable}>
                             <div className={styles.tableContainer}>
@@ -1151,7 +1103,7 @@ function HomeworkListContent() {
 
                                                 const selected = selectedIds.includes(submission.id);
 
-                                                const selectable = submission.status !== 'PENDING';
+                                                const selectable = ['SUBMITTED', 'REVIEWED'].includes(submission.status);
 
                                                 return (
 
@@ -1221,7 +1173,7 @@ function HomeworkListContent() {
 
                                                         {/* PAGES */}
 
-                                                        <td>{submission.images?.length ?? 0}</td>
+                                                        <td>{submission.imageCount ?? 0}</td>
 
                                                         {/* STATUS */}
 
@@ -1289,7 +1241,7 @@ function HomeworkListContent() {
 
                                                             <div className={styles.actionButtons}>
 
-                                                                {Boolean(submission.reviewerId || submission.reviewer) && (
+                                                                {Boolean(submission.reviewerId) && (
 
                                                                     <button
 
@@ -1356,7 +1308,7 @@ function HomeworkListContent() {
 
                                 <div className={styles.mobileRangeHeader}>
 
-                                    <h3>Quick Range Selector</h3>
+                                    <h3>Range Selector (Across Pages)</h3>
 
                                     <button
 
@@ -1368,17 +1320,17 @@ function HomeworkListContent() {
 
                                             const ids = sortedData
 
-                                                .filter((item) => item.status !== 'PENDING')
+                                                .filter((item) => ['SUBMITTED', 'REVIEWED'].includes(item.status))
 
                                                 .map((item) => item.id);
 
-                                            setSelectedIds(ids);
+                                            setSelectedIds(previous => [...new Set([...previous, ...ids])]);
 
                                             setAssignError('');
 
                                         }}>
 
-                                        Select All
+                                        Select This Page
 
                                     </button>
 
@@ -1454,7 +1406,7 @@ function HomeworkListContent() {
 
                                     const statusText = getStatus(submission);
 
-                                    const selectable = submission.status !== 'PENDING';
+                                    const selectable = ['SUBMITTED', 'REVIEWED'].includes(submission.status);
 
                                     const selected = selectedIds.includes(submission.id);
 
@@ -1544,7 +1496,7 @@ function HomeworkListContent() {
 
                                                     <span>Pages</span>
 
-                                                    <strong>{submission.images?.length ?? 0} Pages</strong>
+                                                    <strong>{submission.imageCount ?? 0} Pages</strong>
 
                                                 </div>
 
@@ -1578,7 +1530,7 @@ function HomeworkListContent() {
 
                                                 </button>
 
-                                                {Boolean(submission.reviewerId || submission.reviewer) && (
+                                                {Boolean(submission.reviewerId) && (
 
                                                     <button
 
@@ -1611,7 +1563,7 @@ function HomeworkListContent() {
                             )}
 
                         </div>
-                        <ListPagination total={sortedData.length} pageSize={pageSize} currentPage={safeCurrentPage} onChange={setCurrentPage} />
+                        <ListPagination total={pager.total} pageSize={pageSize} currentPage={safeCurrentPage} onChange={setCurrentPage} />
 
                     </div>
 

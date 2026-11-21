@@ -1,12 +1,15 @@
 /** @format */
 
 'use client';
+import { useServerPagination } from '../../../lib/server-pagination';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { PrivateImage } from '@/lib/private-files';
+
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../../../components/Sidebar';
 import MobileNavigation from '../../../components/MobileNavigation';
-import { EntriesControl, ListPagination, useListPagination } from '../../../components/ListPagination';
+import { EntriesControl, ListPagination } from '../../../components/ListPagination';
 import styles from './student.module.css';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -137,7 +140,7 @@ export default function TeacherStudentPage() {
 
 	const [currentUser, setCurrentUser] = useState<LoginUser | null>(null);
 
-	const [students, setStudents] = useState<StudentData[]>([]);
+	const [studentRows, setStudents] = useState<StudentData[]>([]);
 
 	const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
@@ -147,6 +150,12 @@ export default function TeacherStudentPage() {
 	const [loading, setLoading] = useState(true);
 
 	const [error, setError] = useState('');
+  const pager = useServerPagination({search: searchTerm});
+ const {query: pageQuery, accept: acceptPage} = pager;
+ const students = useMemo(() => pager.isCurrent ? studentRows : [], [pager.isCurrent, studentRows]);
+
+
+
 
 	const apiFetch = useCallback(
 		async (endpoint: string, options: RequestInit = {}) => {
@@ -203,9 +212,10 @@ export default function TeacherStudentPage() {
 			 * 1. Load only the students that belong on the
 			 *    Teacher Students page.
 			 */
-			const teacherResult = await apiFetch('/homework-submissions/teacher/students');
+			const teacherResult = await apiFetch(`/homework-submissions/teacher/students?${pageQuery}`);
 
-			const teacherStudents = getArray<StudentData>(teacherResult);
+			if (!acceptPage(teacherResult, pageQuery)) return;
+      const teacherStudents = getArray<StudentData>(teacherResult).map(row => ({...row, feedback: []}));
 
 			// The assigned-students endpoint includes each student's database image.
 			setStudents(teacherStudents);
@@ -214,7 +224,7 @@ export default function TeacherStudentPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [apiFetch]);
+	}, [apiFetch, pageQuery, acceptPage]);
 
 	useEffect(() => {
 		const storedUser = sessionStorage.getItem('user');
@@ -281,25 +291,24 @@ export default function TeacherStudentPage() {
     </svg>
   `);
 
-	const filteredStudents = useMemo(() => {
-		const keyword = searchTerm.trim().toLowerCase();
+  const paginatedStudents = students;
+  const {pageSize, setPageSize, currentPage, setCurrentPage} = pager;
+  const selectedStudentId = selectedStudent?.id;
+  const feedbackPager = useServerPagination({studentId: selectedStudentId});
+ const {query: feedbackQuery, accept: acceptFeedback} = feedbackPager;
 
-		if (!keyword) {
-			return students;
-		}
-
-		return students.filter(
-			(student) =>
-				student.name.toLowerCase().includes(keyword) ||
-				student.studentCode.toLowerCase().includes(keyword) ||
-				(student.phone ?? '').toLowerCase().includes(keyword) ||
-				(student.township ?? '').toLowerCase().includes(keyword) ||
-				(student.region ?? '').toLowerCase().includes(keyword) ||
-				student.batchName.toLowerCase().includes(keyword),
-		);
-	}, [searchTerm, students]);
-
-	const { rows: paginatedStudents, pageSize, setPageSize, currentPage, setCurrentPage } = useListPagination(filteredStudents, searchTerm);
+  const [feedbackState, setFeedbackState] = useState({key: '', error: ''});
+  const feedbackError = feedbackState.key === feedbackQuery ? feedbackState.error : '';
+  const feedbackLoading = feedbackState.key !== feedbackQuery;
+  useEffect(() => {
+    if (!selectedStudentId) return;
+    let live = true;
+    void apiFetch(`/homework-submissions/teacher/students/${selectedStudentId}/feedback?${feedbackQuery}`)
+      .then(result => {if (live && acceptFeedback(result, feedbackQuery)) setSelectedStudent(previous => previous ? {...previous, feedback: result.data} : previous);})
+      .catch(error => {if (live) setFeedbackState({key: feedbackQuery, error: error instanceof Error ? error.message : 'Unable to load feedback'});})
+      .finally(() => {if (live) setFeedbackState(previous => ({key: feedbackQuery, error: previous.key === feedbackQuery ? previous.error : ''}));});
+    return () => {live = false;};
+  }, [selectedStudentId, feedbackQuery, acceptFeedback, apiFetch]);
 
 	const handleLogout = () => {
 		sessionStorage.removeItem('accessToken');
@@ -324,7 +333,7 @@ export default function TeacherStudentPage() {
 				</div>
 
 				<div className={styles.navRight}>
-					<img src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
+					<PrivateImage src={DEFAULT_AVATAR} alt='Profile' className={styles.profileImg} />
 					<span className={styles.profileName}>{currentUser?.name ?? 'Super Admin'}</span>
 
 					<button type='button' className={styles.logoutBtn} onClick={handleLogout} title='Logout' aria-label='Logout'>
@@ -432,7 +441,7 @@ export default function TeacherStudentPage() {
 											<td className={styles.boldText}>{student.studentCode}</td>
 
 											<td>
-												<img
+												<PrivateImage
 													src={getStudentImage(student)}
 													alt={student.name}
 													className={styles.tableAvatar}
@@ -485,7 +494,7 @@ export default function TeacherStudentPage() {
 						</table>
 					</div>
 
-					<ListPagination total={filteredStudents.length} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
+					<ListPagination total={pager.total} pageSize={pageSize} currentPage={currentPage} onChange={setCurrentPage} />
 
 					<div className={styles.footerBrand}>O-Technique-Myanmar-2026@</div>
 				</main>
@@ -509,7 +518,7 @@ export default function TeacherStudentPage() {
 						</button>
 
 						<div className={styles.modalProfileHeader}>
-							<img
+							<PrivateImage
 								src={getStudentImage(selectedStudent)}
 								alt={selectedStudent.name}
 								className={styles.modalAvatar}
@@ -562,7 +571,10 @@ export default function TeacherStudentPage() {
 						</div>
 
 						<div className={styles.feedbackContainer}>
-							{selectedStudent.feedback.length > 0 ?
+              {feedbackLoading && <p role='status'>Loading feedback…</p>}
+              {feedbackError && <p role='alert'>{feedbackError}</p>}
+              <ListPagination total={feedbackPager.total} pageSize={feedbackPager.pageSize} currentPage={feedbackPager.currentPage} onChange={feedbackPager.setCurrentPage} />
+							{!feedbackLoading && !feedbackError && selectedStudent.feedback.length > 0 ?
 								selectedStudent.feedback.map((feedback) => (
 									<article key={feedback.submissionId} className={styles.feedbackCard}>
 										<div className={styles.feedbackComment}>Comment: {feedback.comment ?? 'No comment'}</div>
@@ -574,7 +586,7 @@ export default function TeacherStudentPage() {
 										)}
 									</article>
 								))
-							:	<p className={styles.emptyFeedback}>No reviewed homework feedback yet.</p>}
+							: feedbackLoading || feedbackError ? null : <p className={styles.emptyFeedback}>No reviewed homework feedback yet.</p>}
 						</div>
 					</section>
 				</div>
